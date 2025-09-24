@@ -1,4 +1,4 @@
 export class CreatePromptDto {
-  title: string;
-  body: string;
+  title!: string;
+  body!: string;
 }
