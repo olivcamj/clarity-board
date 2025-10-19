@@ -8,6 +8,12 @@ async function bootstrap() {
 
     app.getHttpAdapter().getInstance().disable('x-powered-by'); // Remove the header
 
+    app.enableCors({
+      origin: 'http://localhost:3000',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
+    });
+
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true, // strips unknown prperties
