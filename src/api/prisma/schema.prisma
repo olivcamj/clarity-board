@@ -19,13 +19,19 @@ model User {
   id            String   @id @default(uuid())
   name          String
   email         String   @unique
-  role          String
+  role          UserRole @default(VIEWER)
   createdAt     DateTime @default(now())
   clerkId       String   @unique
   updatedAt     DateTime @updatedAt
   assignedTasks Task[]   @relation("AssignedTasks")
   createdTasks  Task[]   @relation("CreatedTasks")
   teams         Team[]   @relation("TeamUsers")
+}
+
+enum UserRole {
+  ADMIN 
+  EDITOR
+  VIEWER
 }
 
 model Team {
