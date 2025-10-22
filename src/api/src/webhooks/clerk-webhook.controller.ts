@@ -14,14 +14,12 @@ export class ClerkWebhookController {
     @Headers('svix-timestamp') svixTimestamp: string,
     @Headers('svix-signature') svixSignature: string,
   ) {
-    // 1. Get the webhook secret from environment
     const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
     if (!webhookSecret) {
       console.error('❌ CLERK_WEBHOOK_SECRET is not set in .env');
       throw new Error('Webhook secret not configured');
     }
 
-    // 2. Verify the webhook is actually from Clerk (not a hacker)
     const webhook = new Webhook(webhookSecret);
     let evt: any;
 
@@ -37,15 +35,12 @@ export class ClerkWebhookController {
       return { error: 'Invalid signature' };
     }
 
-    // 3. Handle different event types
     const eventType = evt.type;
     const userId = evt.data.id; // Clerk user ID
     const webhookData = evt.data;
 
     console.log(`📬 Received webhook: ${eventType} for user ${userId}`);
-    console.log('HERE is the data from the webhook: ', evt.data);
 
-    // 4. React to the event
     try {
       if (eventType === 'user.created' || eventType === 'user.updated') {
         // User signed up or updated profile → Sync to our DB
@@ -66,15 +61,5 @@ export class ClerkWebhookController {
     }
 
     return { received: true };
-    /**
-     * POST /api/webhooks/clerk
-     * Receives events from Clerk when users sign up, update, or delete
-     *
-     * HOW TO SET UP:
-     * 1. Go to Clerk Dashboard → Webhooks
-     * 2. Add endpoint: https://yourapi.com/api/webhooks/clerk
-     * 3. Subscribe to: user.created, user.updated, user.deleted
-     * 4. Copy the webhook secret to .env as CLERK_WEBHOOK_SECRET
-     */
   }
 }
