@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { verifyToken } from '@clerk/backend';
 import { Request as ExpressRequest } from 'express';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface RequestWithAuth extends ExpressRequest {
   auth?: {
     userId: string;
     sessionId: string;
   };
+  user?: any;
   headers: {
     authorization?: string;
     [key: string]: any;
@@ -19,7 +21,7 @@ interface RequestWithAuth extends ExpressRequest {
 }
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
-  constructor() {}
+  constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithAuth>();
@@ -40,7 +42,24 @@ export class ClerkAuthGuard implements CanActivate {
         userId: payload.sub, // The user ID is stored in the `sub` claim
         sessionId: payload.sid,
       };
-      console.log('AUTH: ', request.auth);
+
+      const user = await this.prisma.user.findUnique({
+        where: { clerkId: payload.sub },
+        select: {
+          id: true,
+          clerkId: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found in database.');
+      }
+
+      request.user = user;
+
       return true;
     } catch (error) {
       console.error('Token verification failed:', error);
