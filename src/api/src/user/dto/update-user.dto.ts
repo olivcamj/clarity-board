@@ -6,12 +6,7 @@ import {
   IsEnum,
 } from 'class-validator';
 
-export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
-  MODERATOR = 'moderator',
-}
-
+import { UserRole } from '../../common/enums/roles.enum';
 export class UpdateUserDto {
   @IsNotEmpty()
   @IsString()
