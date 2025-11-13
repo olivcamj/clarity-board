@@ -5,7 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '../../generated/client';
-
+import { UserResponseDto } from './dto/user-response.dto';
+import { createClerkClient } from '@clerk/backend';
 
 // Type for normalized user data
 interface NormalizedUserData {
@@ -64,6 +65,24 @@ export class UserService {
     const clerkUser = await this.fetchClerkUser(clerkId);
     const normalized = this.normalizeClerkApiData(clerkUser);
     return await this.upsertUser(normalized);
+  }
+
+  async updateUserRole(id: string, role: UserRole): Promise<UserResponseDto> {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+
+    return new UserResponseDto(user);
+  }
+
+  async getUsersByRole(role: UserRole): Promise<UserResponseDto[]> {
+    const users = await this.prisma.user.findMany({
+      where: { role },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return users.map((user) => new UserResponseDto(user));
   }
 
   private normalizeWebhookData(data: any): NormalizedUserData {

@@ -1,9 +1,19 @@
-import { Controller, Get, Delete, Param, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  Put,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
 import { UserRole } from '../../generated/client';
-
-@UseGuards(ClerkAuthGuard)
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorators';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+@UseGuards(ClerkAuthGuard, RolesGuard)
 @Controller('api/users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -15,9 +25,9 @@ export class UserController {
    * USAGE: Call this when user first loads your app to get their data
    */
   @Get('me')
-  async getCurrentUser(@Req() req: any) {
+  async getCurrentUser(@CurrentUser() user: any) {
     // Clerk middleware adds auth info to request
-    const clerkId = req.auth.userId; // This is the Clerk user ID
+    const clerkId = user.clerkId; // This is the Clerk user ID
     return await this.userService.syncUserById(clerkId);
   }
 
@@ -28,9 +38,7 @@ export class UserController {
    * USAGE: For a dashboard showing everything user is involved in
    */
   @Get('me/full')
-  async getCurrentUserWithRelations(@Req() req: any) {
-    const clerkId = req.auth.userId;
-    const user = await this.userService.getUserByClerkId(clerkId);
+  async getCurrentUserWithRelations(@CurrentUser() user: any) {
     return this.userService.getUserWithRelations(user.id);
   }
 
@@ -40,11 +48,31 @@ export class UserController {
    *
    * USAGE: Viewing someone else's profile, getting task creator info
    */
+  @Roles(UserRole.ADMIN, UserRole.EDITOR)
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return await this.userService.getUserById(id);
   }
 
+  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  @Get(':id/full')
+  async getUserWithRelations(@Param('id') id: string) {
+    return await this.userService.getUserWithRelations(id);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Put(':id/role')
+  async updateUserRole(@Param('id') id: string, @Body('role') role: UserRole) {
+    return await this.userService.updateUserRole(id, role);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Get('role/:role')
+  async getUsersByRole(@Param('role') role: UserRole) {
+    return await this.userService.getUsersByRole(role);
+  }
+
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   async deleteUser(@Param('id') id: string) {
     return this.userService.deleteUser(id);
