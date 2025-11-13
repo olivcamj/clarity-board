@@ -1,6 +1,7 @@
 import { Controller, Get, Delete, Param, UseGuards, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
+import { UserRole } from '../../generated/client';
 
 @UseGuards(ClerkAuthGuard)
 @Controller('api/users')

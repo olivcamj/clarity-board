@@ -1,10 +1,10 @@
-import { UserRole } from '../../common/enums/roles.enum';
+import { UserRole } from '../../../generated/client';
 export class UserResponseDto {
   id!: string;
   clerkId!: string;
   name!: string | null;
   email!: string | null;
-  role!: UserRole;
+  role?: UserRole;
   createdAt!: Date;
   updatedAt!: Date | null;
 

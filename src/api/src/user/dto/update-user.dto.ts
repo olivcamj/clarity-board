@@ -6,7 +6,7 @@ import {
   IsEnum,
 } from 'class-validator';
 
-import { UserRole } from '../../common/enums/roles.enum';
+import { UserRole } from '../../../generated/client';
 export class UpdateUserDto {
   @IsNotEmpty()
   @IsString()

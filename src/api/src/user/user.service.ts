@@ -4,8 +4,8 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserResponseDto } from './dto/user-response.dto';
-import { createClerkClient } from '@clerk/backend';
+import { UserRole } from '../../generated/client';
+
 
 // Type for normalized user data
 interface NormalizedUserData {
@@ -147,7 +147,7 @@ export class UserService {
           clerkId,
           name: fullName,
           email: email ?? '',
-          role: 'viewer',
+          role: UserRole.VIEWER,
         },
       });
 
