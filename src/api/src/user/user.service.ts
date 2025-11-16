@@ -67,9 +67,12 @@ export class UserService {
     return await this.upsertUser(normalized);
   }
 
-  async updateUserRole(id: string, role: UserRole): Promise<UserResponseDto> {
+  async updateUserRole(
+    clerkId: string,
+    role: UserRole,
+  ): Promise<UserResponseDto> {
     const user = await this.prisma.user.update({
-      where: { id },
+      where: { clerkId },
       data: { role },
     });
 
@@ -205,9 +208,9 @@ export class UserService {
     return new UserResponseDto(user);
   }
 
-  async getUserWithRelations(id: string) {
+  async getUserWithRelations(clerkId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where: { clerkId },
       include: {
         teams: true,
         createdTasks: {
@@ -220,7 +223,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(`User with ID ${clerkId} not found`);
     }
 
     return user;

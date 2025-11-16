@@ -26,8 +26,7 @@ export class UserController {
    */
   @Get('me')
   async getCurrentUser(@CurrentUser() user: any) {
-    // Clerk middleware adds auth info to request
-    const clerkId = user.clerkId; // This is the Clerk user ID
+    const clerkId = user.userId; // This is the Clerk user ID
     return await this.userService.syncUserById(clerkId);
   }
 
@@ -39,7 +38,7 @@ export class UserController {
    */
   @Get('me/full')
   async getCurrentUserWithRelations(@CurrentUser() user: any) {
-    return this.userService.getUserWithRelations(user.id);
+    return this.userService.getUserWithRelations(user.userId);
   }
 
   /**
