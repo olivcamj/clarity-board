@@ -1,4 +1,36 @@
-import { Controller } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { ClerkAuthGuard } from 'src/guards/clerk-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { TeamService } from './team.service';
+import { Roles } from '../common/decorators/roles.decorators';
+import { CreateTeamDto } from './dto/create-team.dto';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { UserRole } from '../../generated/client';
 
-@Controller('team')
-export class TeamController {}
+@UseGuards(ClerkAuthGuard, RolesGuard)
+@Controller('api/team')
+export class TeamController {
+  constructor(private readonly teamService: TeamService) {}
+
+  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  @Post()
+  async createTeam(
+    @Body() createTeamDto: CreateTeamDto,
+    @CurrentUser() user: any,
+  ) {
+    return await this.teamService.createTeam(createTeamDto, user.id);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Delete(':id')
+  async deleteTeam(@Param('id') id: string) {
+    return await this.teamService.deleteTeam(id);
+  }
+}
