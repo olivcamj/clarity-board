@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import { verifyToken } from '@clerk/backend';
 import { Request as ExpressRequest } from 'express';
+import { UserService } from '../user/user.service';
 
 interface RequestWithAuth extends ExpressRequest {
   auth?: {
+    clerkId: string;
     userId: string;
     sessionId: string;
   };
@@ -19,7 +21,7 @@ interface RequestWithAuth extends ExpressRequest {
 }
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
-  constructor() {}
+  constructor(private readonly userService: UserService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithAuth>();
@@ -34,12 +36,17 @@ export class ClerkAuthGuard implements CanActivate {
       const payload = await verifyToken(token, {
         secretKey: process.env.CLERK_SECRET_KEY!,
       });
+      const clerkId = payload.sub; // The user ID is stored in the `sub` claim
+
+      const dbUser = this.userService.getUserByClerkId(clerkId);
       // Add user info to request object
       // This is where `req.auth` will be populated
       request.auth = {
-        userId: payload.sub, // The user ID is stored in the `sub` claim
+        clerkId,
+        userId: (await dbUser).id,
         sessionId: payload.sid,
       };
+
       return true;
     } catch (error) {
       console.error('Token verification failed:', error);
