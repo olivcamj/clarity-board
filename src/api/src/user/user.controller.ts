@@ -26,8 +26,7 @@ export class UserController {
    */
   @Get('me')
   async getCurrentUser(@CurrentUser() user: any) {
-    const clerkId = user.userId; // This is the Clerk user ID
-    return await this.userService.syncUserById(clerkId);
+    return await this.userService.syncUserById(user.clerkId);
   }
 
   /**
@@ -38,7 +37,7 @@ export class UserController {
    */
   @Get('me/full')
   async getCurrentUserWithRelations(@CurrentUser() user: any) {
-    return this.userService.getUserWithRelations(user.userId);
+    return this.userService.getUserWithRelations(user.clerkId);
   }
 
   /**
