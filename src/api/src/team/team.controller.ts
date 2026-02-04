@@ -2,9 +2,11 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Post,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ClerkAuthGuard } from 'src/guards/clerk-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
@@ -25,7 +27,22 @@ export class TeamController {
     @Body() createTeamDto: CreateTeamDto,
     @CurrentUser() user: any,
   ) {
-    return await this.teamService.createTeam(createTeamDto, user.id);
+    return await this.teamService.createTeam(createTeamDto, user.userId);
+  }
+
+  @Get()
+  async getTeams(@Query('userId') userId: string) {
+    return this.teamService.getTeams(userId);
+  }
+
+  @Post(':teamId/users/:userId')
+  async addUser(teamId: string, userId: string) {
+    return await this.teamService.addUserToTeam(teamId, userId);
+  }
+
+  @Delete(':teamId/users/:userId')
+  async removeUser(teamId: string, userId: string) {
+    return await this.teamService.removeUserFromTeam(teamId, userId);
   }
 
   @Roles(UserRole.ADMIN)

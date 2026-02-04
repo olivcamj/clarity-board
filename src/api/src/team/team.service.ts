@@ -38,6 +38,49 @@ export class TeamService {
     return new TeamResponseDto(team);
   }
 
+  async getTeams(userId) {
+    const teams = await this.prisma.team.findMany({
+      where: {
+        users: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        _count: {
+          select: { users: true, boards: true },
+        },
+      },
+    });
+
+    return teams.map((team) => new TeamResponseDto(team));
+  }
+
+  async addUserToTeam(teamId: string, userId: string) {
+    return this.prisma.team.update({
+      where: { id: teamId },
+      data: {
+        users: {
+          connect: { id: userId },
+        },
+      },
+      include: { users: true },
+    });
+  }
+
+  async removeUserFromTeam(teamId: string, userId: string) {
+    return this.prisma.team.update({
+      where: { id: teamId },
+      data: {
+        users: {
+          disconnect: { id: userId },
+        },
+      },
+      include: { users: true },
+    });
+  }
+
   async deleteTeam(teamId: string): Promise<{ message: string }> {
     const team = await this.prisma.team.findUnique({
       where: { id: teamId },
