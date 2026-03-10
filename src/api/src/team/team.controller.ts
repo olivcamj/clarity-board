@@ -36,12 +36,18 @@ export class TeamController {
   }
 
   @Post(':teamId/users/:userId')
-  async addUser(teamId: string, userId: string) {
+  async addUser(
+    @Param('teamId') teamId: string,
+    @Param('userId') userId: string,
+  ) {
     return await this.teamService.addUserToTeam(teamId, userId);
   }
 
   @Delete(':teamId/users/:userId')
-  async removeUser(teamId: string, userId: string) {
+  async removeUser(
+    @Param('teamId') teamId: string,
+    @Param('userId') userId: string,
+  ) {
     return await this.teamService.removeUserFromTeam(teamId, userId);
   }
 
