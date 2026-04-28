@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from './prisma.service';
-import { PrismaClient } from '../../generated/client';
 
 describe('PrismaService', () => {
   let service: PrismaService;
@@ -19,17 +18,18 @@ describe('PrismaService', () => {
 
   it('should call $connect on init', async () => {
     const connectSpy = jest
-      .spyOn(PrismaClient.prototype, '$connect')
-      .mockResolvedValue();
+      .spyOn(service as any, '$connect')
+      .mockResolvedValue(undefined);
 
     await service.onModuleInit();
+
     expect(connectSpy).toHaveBeenCalled();
   });
 
   it('should call $disconnect on destroy', async () => {
     const disconnectSpy = jest
-      .spyOn(PrismaClient.prototype, '$disconnect')
-      .mockResolvedValue();
+      .spyOn(service as any, '$disconnect')
+      .mockResolvedValue(undefined);
 
     await service.onModuleDestroy();
 
