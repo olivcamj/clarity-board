@@ -4,18 +4,22 @@ import { ReactNode } from 'react';
 interface DroppableProps {
   id: string;
   children: ReactNode;
+  className?: string;
+  label?: string;
 }
 
-export function Droppable({ id, children }: DroppableProps) {
+export function Droppable({ id, children, className = '', label }: DroppableProps) {
   const { ref, isDropTarget } = useDroppable({ id });
   return (
-    <div
+    <section
       ref={ref}
-      className={`flex flex-col gap-2 rounded-xl p-4 min-h-96 w-72 transition-colors ${
-        isDropTarget ? 'bg-indigo-50 ring-2 ring-indigo-300' : 'bg-gray-100'
-      }`}
+      aria-label={label}
+      className={`flex flex-col rounded-xl min-h-96 shrink-0 transition-colors ${
+        isDropTarget ? 'bg-slate-soft ring-2 ring-slate' : 'bg-bone'
+      } ${className}`}
+      style={{ gap: 8, padding: 14, borderRadius: 12 }}
     >
       {children}
-    </div>
+    </section>
   );
 }
