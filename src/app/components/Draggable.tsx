@@ -1,19 +1,27 @@
-import { useDraggable } from '@dnd-kit/react';
+import { useSortable } from '@dnd-kit/react/sortable';
+import { RestrictToElement } from '@dnd-kit/dom/modifiers';
 import { ReactNode } from 'react';
 
 interface DraggableProps {
   id: string | number;
+  index: number;
+  group: string;
   children: ReactNode;
+  container?: HTMLElement | null;
 }
 
-export function Draggable({ id, children }: DraggableProps) {
-  const { ref, isDragging } = useDraggable({ id });
+export function Draggable({ id, index, group, children, container }: DraggableProps) {
+  const { ref, isDragging } = useSortable({
+    id,
+    index,
+    group,
+    modifiers: container ? [RestrictToElement.configure({ element: container })] : [],
+  });
   return (
     <div
       ref={ref}
-      className={`bg-white rounded-lg border border-gray-200 shadow-sm p-4 cursor-grab active:cursor-grabbing transition-opacity select-none ${
-        isDragging ? 'opacity-40 shadow-lg' : 'opacity-100 hover:shadow-md'
-      }`}
+      className="select-none"
+      style={{ opacity: isDragging ? 0.4 : 1, transition: 'opacity 150ms' }}
     >
       {children}
     </div>
