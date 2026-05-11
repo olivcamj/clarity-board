@@ -1,26 +1,139 @@
-@import "tailwindcss";
+@import "tailwindcss/preflight";
+@tailwind utilities;
 
+/* ─── Design tokens ─────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Warm paper neutrals */
+  --paper:    #F5EFE6;
+  --bone:     #EFE7DA;
+  --sand:     #E6DCC9;
+  --biscuit:  #D9CBB0;
+
+  --ink:      #1F1A15;
+  --soot:     #3A3128;
+  --ash:      #6B5F51;
+  --smoke:    #8F8273;
+  --chalk:    #B9AE9C;
+
+  /* Primary: slate */
+  --slate:      #3B6FB5;
+  --slate-hot:  #2E5A96;
+  --slate-soft: #D7E3F1;
+  --slate-ink:  #1E3A5F;
+
+  /* AI accent: ember */
+  --ember:      #D9541E;
+  --ember-hot:  #C04414;
+  --ember-soft: #F4D7C5;
+
+  /* Semantic */
+  --sage:  #7A8C6E; --sage-soft:  #DBE2D2;
+  --rose:  #C98277; --rose-soft:  #F2D9D2;
+  --sky:   #6C8AA6; --sky-soft:   #D5DFE8;
+  --ochre: #C8A04E; --ochre-soft: #EFE1BF;
+  --plum:  #9273A1; --plum-soft:  #E5DBEA;
+
+  --border: var(--chalk);
+
+  /* Type stacks */
+  --font-display-stack: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-ui-stack:      "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono-stack:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --shadow-1: 0 1px 0 rgba(31, 26, 21, 0.04),
+              0 1px 2px rgba(31, 26, 21, 0.06);
+  --shadow-2: 0 2px 4px rgba(31, 26, 21, 0.06),
+              0 4px 12px rgba(31, 26, 21, 0.05);
+  --shadow-3: 0 4px 8px rgba(31, 26, 21, 0.06),
+              0 12px 32px rgba(31, 26, 21, 0.08);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="dark"] {
+  --paper:   #1A1613;
+  --bone:    #221D19;
+  --sand:    #2B241F;
+  --biscuit: #3A312A;
+
+  --ink:    #F0E8DB;
+  --soot:   #E1D7C6;
+  --ash:    #B8AC99;
+  --smoke:  #8C8070;
+  --chalk:  #3A312A;
+
+  --slate:      #6B95C9;
+  --slate-soft: #1F2A38;
+  --slate-ink:  #A8C2DF;
+
+  --ember:      #E86A38;
+  --ember-hot:  #F58450;
+  --ember-soft: #3A251A;
+
+  --sage:  #9AAD8C; --sage-soft:  #2A3226;
+  --rose:  #D9968B; --rose-soft:  #362723;
+  --sky:   #8EA8BF; --sky-soft:   #232B32;
+  --ochre: #D9B86A; --ochre-soft: #342D1E;
+  --plum:  #B59CC2; --plum-soft:  #2B2130;
+
+  --shadow-1: 0 1px 0 rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-2: 0 2px 4px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-3: 0 4px 8px rgba(0,0,0,0.4), 0 12px 32px rgba(0,0,0,0.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ─── Base ───────────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ─── Tailwind v4 theme registration ────────────────────────── */
+/*
+  @theme inline: utilities reference var() directly, so dark-mode
+  overrides on :root automatically propagate to every utility.
+*/
+@theme inline {
+  /* Neutrals */
+  --color-paper:   var(--paper);
+  --color-bone:    var(--bone);
+  --color-sand:    var(--sand);
+  --color-biscuit: var(--biscuit);
+  --color-ink:     var(--ink);
+  --color-soot:    var(--soot);
+  --color-ash:     var(--ash);
+  --color-smoke:   var(--smoke);
+  --color-chalk:   var(--chalk);
+
+  /* Slate */
+  --color-slate:      var(--slate);
+  --color-slate-hot:  var(--slate-hot);
+  --color-slate-soft: var(--slate-soft);
+  --color-slate-ink:  var(--slate-ink);
+
+  /* Ember */
+  --color-ember:      var(--ember);
+  --color-ember-hot:  var(--ember-hot);
+  --color-ember-soft: var(--ember-soft);
+
+  /* Semantic */
+  --color-sage:       var(--sage);
+  --color-sage-soft:  var(--sage-soft);
+  --color-rose:       var(--rose);
+  --color-rose-soft:  var(--rose-soft);
+  --color-sky:        var(--sky);
+  --color-sky-soft:   var(--sky-soft);
+  --color-ochre:      var(--ochre);
+  --color-ochre-soft: var(--ochre-soft);
+  --color-plum:       var(--plum);
+  --color-plum-soft:  var(--plum-soft);
+
+  /* Fonts — use renamed stack vars to avoid circular self-reference */
+  --font-ui:      var(--font-ui-stack);
+  --font-display: var(--font-display-stack);
+  --font-mono:    var(--font-mono-stack);
+
+  /* Shadows */
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
 }
