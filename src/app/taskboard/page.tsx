@@ -36,7 +36,15 @@ const initialColumns: Record<string, { name: string; items: Task[] }> = {
         labels: ['design', 'frontend'],
         assignees: ['u1', 'u3'],
         due: 'May 10',
+        sprint: 'Sprint 14',
+        createdAt: 'Apr 18',
+        createdBy: 'u1',
         comments: 3,
+        conversation: [
+          { id: 'c1', authorId: 'u4', text: 'Should we include mobile screens in scope or keep it web-only for now?', timestamp: '2h' },
+          { id: 'c2', authorId: 'u1', text: 'Web-only for this sprint. Mobile can follow once the patterns are validated.', timestamp: '1h' },
+          { id: 'c3', authorId: 'clarity', text: 'Mira — based on the last 3 onboarding redesigns you\'ve shipped, the drop-off point is typically step 3. Worth scoping that first.', timestamp: '45m', isAI: true },
+        ],
       },
       {
         id: 'task-2',
@@ -47,11 +55,19 @@ const initialColumns: Record<string, { name: string; items: Task[] }> = {
         labels: ['bug', 'backend'],
         assignees: ['u2'],
         due: 'May 8',
+        sprint: 'Sprint 14',
+        createdAt: 'May 1',
+        createdBy: 'u2',
         comments: 5,
         subtasks: [
           { id: 's1', text: 'Reproduce reliably in staging', done: true },
           { id: 's2', text: 'Patch refresh interceptor', done: false },
           { id: 's3', text: 'Add integration test', done: false },
+        ],
+        conversation: [
+          { id: 'c1', authorId: 'u5', text: 'Seeing this in prod too — happens after ~4 hours of idle time.', timestamp: '3h' },
+          { id: 'c2', authorId: 'u2', text: 'Confirmed. The refresh window is hardcoded to 3600s but the server-side TTL is shorter.', timestamp: '2h' },
+          { id: 'c3', authorId: 'clarity', text: 'Alex — the interceptor in auth/client.ts line 84 has a race condition when two requests fire simultaneously. Both attempt refresh and one silently fails.', timestamp: '1h', isAI: true },
         ],
       },
       {
