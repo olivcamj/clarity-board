@@ -36,21 +36,31 @@ export interface Attachment {
   href?: string;
 }
 
+export interface TaskComment {
+  id: string;
+  authorId: string;   // person ID from PEOPLE_BY_ID, or "clarity" for AI
+  text: string;
+  timestamp: string;
+  isAI?: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
   status: Status;
   labels?: LabelKey[];
-  assignees?: string[];           // person IDs
+  assignees?: string[];
   subtasks?: Subtask[];
   attachments?: Attachment[];
   priority: Priority;
-  due?: string;                   // human-readable ("Apr 29")
+  due?: string;
   sprint?: string;
+  createdAt?: string;
+  createdBy?: string;
   comments?: number;
+  conversation?: TaskComment[];
   activity?: number;
-  /** Whether this task was suggested by the Clarity AI layer. */
   ai?: boolean;
   source?: string;
 }
