@@ -6,6 +6,7 @@ import { UserModule } from './user/user.module';
 import { ClerkWebhookModule } from './webhooks/clerk-webhook.module';
 import { TeamModule } from './team/team.module';
 import { BoardModule } from './board/board.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { BoardModule } from './board/board.module';
     ClerkWebhookModule,
     TeamModule,
     BoardModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],
