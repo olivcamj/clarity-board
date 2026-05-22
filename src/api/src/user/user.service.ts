@@ -216,7 +216,7 @@ export class UserService {
         createdTasks: {
           include: { board: true },
         },
-        assignedTasks: {
+        tasks: {
           include: { board: true },
         },
       },
