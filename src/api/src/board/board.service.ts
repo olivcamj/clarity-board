@@ -57,7 +57,7 @@ export class BoardService {
       include: {
         team: true,
         tasks: {
-          include: { assignedTo: true },
+          include: { assignees: { select: { id: true, name: true } } },
         },
       },
     });
