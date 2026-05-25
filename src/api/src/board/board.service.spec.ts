@@ -22,7 +22,8 @@ describe('BoardService', () => {
     teamId: 'team-1',
     team: { name: 'Sample Team Name' },
     tasks: [
-      { id: 'task-1', title: 'Fix bug', status: 'TODO', assignedTo: null },
+      // status is lowercase in TaskResponseDto; assignees replaces old assignedTo FK
+      { id: 'task-1', title: 'Fix bug', status: 'todo', assignees: [] },
     ],
   };
 
