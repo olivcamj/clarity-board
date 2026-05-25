@@ -20,7 +20,7 @@ describe('UserController', () => {
     ...mockUser,
     teams: [],
     createdTasks: [],
-    assignedTasks: [],
+    tasks: [],  // renamed from assignedTasks in schema
   };
 
   const mockUserService = {

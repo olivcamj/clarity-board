@@ -195,7 +195,7 @@ describe('UserService', () => {
         ...mockDbUser,
         teams: [],
         createdTasks: [],
-        assignedTasks: [],
+        tasks: [],  // renamed from assignedTasks in schema
       };
       mockPrismaService.user.findUnique.mockResolvedValue(userWithRelations);
 
