@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '../ui/Button';
+import { Button } from '../../ui/Button';
 
 function SkeletonBar({ width, height = 10, color = 'var(--sand)' }: { width: string | number; height?: number; color?: string }) {
   return (
