@@ -1,5 +1,9 @@
 @import "tailwindcss/preflight";
-@tailwind utilities;
+@import "tailwindcss/utilities";
+
+/* Explicitly include route-group dirs — parens in folder names can break
+   Tailwind v4's default glob, to force-scan everything under src/app. */
+@source "./**/*.{tsx,ts,js,jsx}";
 
 /* ─── Design tokens ─────────────────────────────────────────── */
 :root {
