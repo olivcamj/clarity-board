@@ -32,6 +32,7 @@ export function Checkbox({
         role="checkbox"
         aria-checked={checked}
         tabIndex={0}
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(); }}
         onKeyDown={handleKey}
         className="inline-flex items-center justify-center transition-all duration-[180ms] ease-[cubic-bezier(0.2,0.7,0.1,1)] shrink-0"
