@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { Priority, Task } from "@/types/task";
 import { LABELS, personName } from "@/data/labels";
+import { formatDate } from "@/lib/utils";
 
 import { AvatarStack } from "../ui/Avatar";
 import { Badge } from "../ui/Badge";
@@ -107,8 +108,8 @@ export function TaskCard({
           )}
         </div>
         {task.due && (
-          <span className="ml-auto font-mono text-ash" style={{ fontSize: 10 }} aria-label={`Due ${task.due}`}>
-            {task.due}
+          <span className="ml-auto font-mono text-ash" style={{ fontSize: 10 }} aria-label={`Due ${formatDate(task.due)}`}>
+            {formatDate(task.due)}
           </span>
         )}
       </div>
