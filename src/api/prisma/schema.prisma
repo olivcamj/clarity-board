@@ -15,17 +15,18 @@ model Prompt {
 }
 
 model User {
-  id           String        @id @default(uuid())
+  id           String           @id @default(uuid())
   name         String
-  email        String        @unique
-  role         UserRole      @default(VIEWER)
-  createdAt    DateTime      @default(now())
-  clerkId      String        @unique
-  updatedAt    DateTime      @updatedAt
-  tasks        Task[]        @relation("TaskAssignees")
-  createdTasks Task[]        @relation("CreatedTasks")
+  email        String           @unique
+  role         UserRole         @default(VIEWER)
+  createdAt    DateTime         @default(now())
+  clerkId      String           @unique
+  updatedAt    DateTime         @updatedAt
+  tasks        Task[]           @relation("TaskAssignees")
+  createdTasks Task[]           @relation("CreatedTasks")
   comments     TaskComment[]
-  teams        Team[]        @relation("TeamUsers")
+  memberships  TeamMembership[]
+  invitesSent  InviteToken[]    @relation("InviteCreator")
 }
 
 enum UserRole {
@@ -35,10 +36,42 @@ enum UserRole {
 }
 
 model Team {
-  id     String  @id @default(uuid())
-  name   String
-  boards Board[]
-  users  User[]  @relation("TeamUsers")
+  id          String           @id @default(uuid())
+  name        String
+  boards      Board[]
+  memberships TeamMembership[]
+  invites     InviteToken[]
+}
+
+model TeamMembership {
+  id        String     @id @default(uuid())
+  userId    String
+  teamId    String
+  role      MemberRole @default(VIEWER)
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+enum MemberRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model InviteToken {
+  id          String     @id @default(uuid())
+  token       String     @unique @default(uuid())
+  teamId      String
+  role        MemberRole @default(VIEWER)
+  createdById String
+  expiresAt   DateTime?
+  usedAt      DateTime?
+  createdAt   DateTime   @default(now())
+  team        Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy   User       @relation("InviteCreator", fields: [createdById], references: [id])
 }
 
 model Board {
