@@ -11,6 +11,7 @@ import { Badge } from "../ui/Badge";
 import { Checkbox } from "../ui/Checkbox";
 import { Icon } from "../ui/Icon";
 import { Spark } from "../ui/Spark";
+import { useDragListeners } from "./Draggable";
 
 export type Density = "compact" | "comfortable";
 
@@ -21,12 +22,6 @@ export interface TaskCardProps {
   onClick?: () => void;
   onToggleSubtask?: (subtaskId: string) => void;
 }
-
-const PRIORITY_COLOR: Record<Priority, string> = {
-  high: "var(--rose)",
-  med:  "var(--ochre)",
-  low:  "var(--smoke)",
-};
 
 export function TaskCard({
   task,
@@ -43,6 +38,7 @@ export function TaskCard({
 
   const [hovered, setHovered] = useState(false);
   const elevated = (hovered && !dragging) || dragging;
+  const dragListeners = useDragListeners();
 
   const cardStyle: CSSProperties = {
     border: `1px solid ${task.ai ? "var(--ember)" : "var(--border)"}`,
@@ -70,6 +66,7 @@ export function TaskCard({
     onToggleSubtask?.(subId);
   };
 
+
   return (
     <div
       role="button"
@@ -82,6 +79,7 @@ export function TaskCard({
       className="bg-paper rounded-lg cursor-grab relative transition-[box-shadow,border-color,transform] duration-[180ms] ease-[cubic-bezier(0.2,0.7,0.1,1)] active:cursor-grabbing"
       style={cardStyle}
       data-task-id={task.id}
+      {...(dragListeners as object)}
     >
       {task.ai && (
         <span
@@ -96,7 +94,7 @@ export function TaskCard({
       {/* Header: id · priority · due */}
       <div className="flex items-center" style={{ marginBottom: 4 }}>
         <div className="flex items-center" style={{ gap: 6 }}>
-          <span className="font-mono text-ash" style={{ fontSize: 10 }} aria-label={`Task ${task.id}`}>{task.id}</span>
+          <span className="font-mono text-ash" style={{ fontSize: 10 }} aria-label={`Task #${task.id.slice(-5).toUpperCase()}`}>{`#${task.id.slice(-5).toUpperCase()}`}</span>
           {task.priority === "high" && (
             <span
               className="font-mono text-rose inline-flex items-center"

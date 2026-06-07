@@ -1,6 +1,16 @@
+'use client';
+
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
+
+type Listeners = Record<string, Function> | undefined;
+
+const DragListenersCtx = createContext<Listeners>(undefined);
+
+export function useDragListeners() {
+  return useContext(DragListenersCtx);
+}
 
 interface DraggableProps {
   id: string;
@@ -18,18 +28,19 @@ export function Draggable({ id, children }: DraggableProps) {
   } = useSortable({ id });
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0 : 1,
-      }}
-      className="select-none"
-      {...attributes}
-      {...listeners}
-    >
-      {children}
-    </div>
+    <DragListenersCtx.Provider value={listeners}>
+      <div
+        ref={setNodeRef}
+        style={{
+          transform: CSS.Transform.toString(transform),
+          transition,
+          opacity: isDragging ? 0 : 1,
+        }}
+        className="select-none"
+        {...attributes}
+      >
+        {children}
+      </div>
+    </DragListenersCtx.Provider>
   );
 }
