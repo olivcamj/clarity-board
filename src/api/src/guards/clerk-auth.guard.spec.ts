@@ -14,12 +14,13 @@ describe('ClerkAuthGuard', () => {
   let guard: ClerkAuthGuard;
   let mockUserService: Partial<UserService>;
 
-  const mockDbUser = { id: 'user-1', clerkId: 'clerk-1' };
+  const mockDbUser = { id: 'user-1', clerkId: 'clerk-1', role: 'EDITOR' };
 
   const makeContext = (authHeader?: string): ExecutionContext => {
     const request: any = {
       headers: authHeader ? { authorization: authHeader } : {},
       auth: undefined,
+      user: undefined,
     };
     return {
       switchToHttp: () => ({ getRequest: () => request }),
@@ -58,6 +59,7 @@ describe('ClerkAuthGuard', () => {
         userId: 'user-1',
         sessionId: 'session-1',
       });
+      expect(request.user).toEqual(mockDbUser);
       expect(mockUserService.getUserByClerkId).toHaveBeenCalledWith('clerk-1');
     });
 

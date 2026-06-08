@@ -7,6 +7,7 @@ import {
 import { verifyToken } from '@clerk/backend';
 import { Request as ExpressRequest } from 'express';
 import { UserService } from '../user/user.service';
+import { UserResponseDto } from '../user/dto/user-response.dto';
 
 interface RequestWithAuth extends ExpressRequest {
   auth?: {
@@ -14,6 +15,7 @@ interface RequestWithAuth extends ExpressRequest {
     userId: string;
     sessionId: string;
   };
+  user?: UserResponseDto;
   headers: {
     authorization?: string;
     [key: string]: any;
@@ -38,14 +40,17 @@ export class ClerkAuthGuard implements CanActivate {
       });
       const clerkId = payload.sub; // The user ID is stored in the `sub` claim
 
-      const dbUser = this.userService.getUserByClerkId(clerkId);
-      // Add user info to request object
-      // This is where `req.auth` will be populated
+      const dbUser = await this.userService.getUserByClerkId(clerkId);
+
+      // request.auth — read by @CurrentUser() decorator
       request.auth = {
         clerkId,
-        userId: (await dbUser).id,
+        userId: dbUser.id,
         sessionId: payload.sid,
       };
+
+      // request.user — read by RolesGuard
+      request.user = dbUser;
 
       return true;
     } catch (error) {
