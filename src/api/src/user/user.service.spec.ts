@@ -190,22 +190,28 @@ describe('UserService', () => {
   });
 
   describe('getUserWithRelations', () => {
-    it('should return user with teams and tasks', async () => {
+    it('should return user with teams (via memberships) and tasks', async () => {
+      const membership = {
+        role: 'EDITOR',
+        team: { id: 'team-1', name: 'Alpha Team' },
+      };
       const userWithRelations = {
         ...mockDbUser,
-        teams: [],
+        memberships: [membership],
         createdTasks: [],
-        tasks: [],  // renamed from assignedTasks in schema
+        tasks: [],
       };
       mockPrismaService.user.findUnique.mockResolvedValue(userWithRelations);
 
       const result = await service.getUserWithRelations('clerk-1');
 
-      expect(result.teams).toEqual([]);
+      expect(result.teams).toEqual([
+        { id: 'team-1', name: 'Alpha Team', role: 'EDITOR' },
+      ]);
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { clerkId: 'clerk-1' },
-          include: expect.any(Object),
+          include: expect.objectContaining({ memberships: expect.any(Object) }),
         }),
       );
     });
