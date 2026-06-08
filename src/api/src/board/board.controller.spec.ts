@@ -3,6 +3,7 @@ import { BoardController } from './board.controller';
 import { BoardService } from './board.service';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
+import { TeamMemberGuard } from '../guards/team-member.guard';
 
 describe('BoardController', () => {
   let controller: BoardController;
@@ -35,6 +36,8 @@ describe('BoardController', () => {
       .overrideGuard(ClerkAuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(TeamMemberGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
