@@ -169,7 +169,7 @@ export class UserService {
           clerkId,
           name: fullName,
           email: email ?? '',
-          role: UserRole.VIEWER,
+          role: UserRole.EDITOR,
         },
       });
 
@@ -212,7 +212,9 @@ export class UserService {
     const user = await this.prisma.user.findUnique({
       where: { clerkId },
       include: {
-        teams: true,
+        memberships: {
+          include: { team: true },
+        },
         createdTasks: {
           include: { board: true },
         },
@@ -226,7 +228,15 @@ export class UserService {
       throw new NotFoundException(`User with ID ${clerkId} not found`);
     }
 
-    return user;
+    // Reshape memberships → teams for the frontend's BackendUser shape
+    return {
+      ...user,
+      teams: user.memberships.map((m) => ({
+        id: m.team.id,
+        name: m.team.name,
+        role: m.role,
+      })),
+    };
   }
 
   async deleteUser(id: string): Promise<{ message: string }> {
