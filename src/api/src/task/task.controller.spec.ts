@@ -3,6 +3,7 @@ import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
+import { TeamMemberGuard } from '../guards/team-member.guard';
 
 describe('TaskController', () => {
   let controller: TaskController;
@@ -53,6 +54,8 @@ describe('TaskController', () => {
       .overrideGuard(ClerkAuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(TeamMemberGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
