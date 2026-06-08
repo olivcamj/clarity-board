@@ -10,24 +10,36 @@ import {
 } from '@nestjs/common';
 import { ClerkAuthGuard } from 'src/guards/clerk-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { TeamMemberGuard } from 'src/guards/team-member.guard';
 import { TeamService } from './team.service';
-import { Roles } from '../common/decorators/roles.decorators';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { UserRole } from '../../generated/client';
+import { TeamRoles } from 'src/common/decorators/team-roles.decorator';
+import { ResourceContext } from 'src/common/decorators/resource-type.decorator';
+import { MemberRole } from '../../generated/client';
+import { IsEnum, IsOptional } from 'class-validator';
 
-@UseGuards(ClerkAuthGuard, RolesGuard)
+class CreateInviteDto {
+  @IsEnum(MemberRole)
+  role!: MemberRole;
+}
+
+class JoinViaInviteDto {
+  token!: string;
+}
+
+@UseGuards(ClerkAuthGuard, RolesGuard, TeamMemberGuard)
 @Controller('api/team')
 export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  // Any authenticated user can create a team — they become its ADMIN
   @Post()
   async createTeam(
     @Body() createTeamDto: CreateTeamDto,
     @CurrentUser() user: any,
   ) {
-    return await this.teamService.createTeam(createTeamDto, user.userId);
+    return this.teamService.createTeam(createTeamDto, user.userId);
   }
 
   @Get()
@@ -35,25 +47,60 @@ export class TeamController {
     return this.teamService.getTeams(userId);
   }
 
+  // Add a member — ADMIN only
+  @ResourceContext('team')
+  @TeamRoles(MemberRole.ADMIN)
   @Post(':teamId/users/:userId')
   async addUser(
     @Param('teamId') teamId: string,
     @Param('userId') userId: string,
+    @Body('role') role: MemberRole = MemberRole.EDITOR,
   ) {
-    return await this.teamService.addUserToTeam(teamId, userId);
+    return this.teamService.addUserToTeam(teamId, userId, role);
   }
 
+  // Remove a member — ADMIN only
+  @ResourceContext('team')
+  @TeamRoles(MemberRole.ADMIN)
   @Delete(':teamId/users/:userId')
   async removeUser(
     @Param('teamId') teamId: string,
     @Param('userId') userId: string,
   ) {
-    return await this.teamService.removeUserFromTeam(teamId, userId);
+    return this.teamService.removeUserFromTeam(teamId, userId);
   }
 
-  @Roles(UserRole.ADMIN)
-  @Delete(':id')
-  async deleteTeam(@Param('id') id: string) {
-    return await this.teamService.deleteTeam(id);
+  // Generate an invite link — ADMIN only
+  @ResourceContext('team')
+  @TeamRoles(MemberRole.ADMIN)
+  @Post(':teamId/invite')
+  async createInvite(
+    @Param('teamId') teamId: string,
+    @Body() dto: CreateInviteDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.teamService.createInvite(teamId, dto.role, user.userId);
+  }
+
+  // Consume an invite token — any authenticated user
+  @Post('join')
+  async joinViaInvite(@Body() dto: JoinViaInviteDto, @CurrentUser() user: any) {
+    return this.teamService.joinViaInvite(dto.token, user.userId);
+  }
+
+  // Get team members — any member can view
+  @ResourceContext('team')
+  @TeamRoles(MemberRole.VIEWER, MemberRole.EDITOR, MemberRole.ADMIN)
+  @Get(':teamId/members')
+  getTeamMembers(@Param('teamId') teamId: string) {
+    return this.teamService.getTeamMembers(teamId);
+  }
+
+  // Delete team — ADMIN only
+  @ResourceContext('team')
+  @TeamRoles(MemberRole.ADMIN)
+  @Delete(':teamId')
+  async deleteTeam(@Param('teamId') teamId: string) {
+    return this.teamService.deleteTeam(teamId);
   }
 }
