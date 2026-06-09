@@ -12,6 +12,8 @@ interface BoardHeaderProps {
   progress: number;      // 0–100
   teamNames: string[];
   onNewTask: () => void;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
 }
 
 export function BoardHeader({
@@ -22,6 +24,8 @@ export function BoardHeader({
   progress,
   teamNames,
   onNewTask,
+  searchQuery,
+  onSearchChange,
 }: BoardHeaderProps) {
   return (
     <header>
@@ -46,6 +50,8 @@ export function BoardHeader({
             <input
               type="search"
               placeholder="Search tasks, people, labels…"
+              value={searchQuery}
+              onChange={e => onSearchChange(e.target.value)}
               className="bg-transparent border-0 outline-none flex-1 text-[13px] font-ui text-ink min-w-0"
               aria-label="Search tasks, people, labels"
             />
