@@ -4,6 +4,7 @@ import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { Task, Priority, Status, LabelKey } from '@/types/task';
 import { LABELS, personName } from '@/data/labels';
+import { formatDate } from '@/lib/utils';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -14,15 +15,21 @@ import { Spark } from '../ui/Spark';
 export type ModalMode = 'view' | 'edit' | 'create';
 export type ColumnOption = { id: string; name: string };
 
+export interface TeamMemberOption {
+  id: string;
+  name: string;
+}
+
 export interface TaskModalProps {
   task?: Task;
   mode?: ModalMode;
   columnId?: string;
   columnOptions?: ColumnOption[];
+  teamMembers?: TeamMemberOption[];
   onClose: () => void;
   onSave?: (task: Task) => void;
   onCreate?: (
-    fields: Pick<Task, 'title' | 'description' | 'priority' | 'labels' | 'due' | 'sprint' | 'subtasks'>,
+    fields: Pick<Task, 'title' | 'description' | 'priority' | 'labels' | 'due' | 'sprint' | 'subtasks' | 'assignees'>,
     columnId: string
   ) => void;
   onToggleSubtask?: (subtaskId: string) => void;
@@ -60,6 +67,10 @@ const FOCUSABLE =
   'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),' +
   'textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
+function resolveMember(id: string, members: TeamMemberOption[]): string {
+  return members.find(member => member.id === id)?.name ?? personName(id);
+}
+
 function MetaTerm({ children }: { children: ReactNode }) {
   return <dt className={`${SECTION_LABEL_CLS} mb-[6px]`}>{children}</dt>;
 }
@@ -73,27 +84,27 @@ function PriorityPicker({
   onChange,
 }: {
   value: Priority;
-  onChange: (p: Priority) => void;
+  onChange: (priority: Priority) => void;
 }) {
   return (
     <div className="flex gap-[6px] flex-wrap">
-      {PRIORITY_ORDER.map(p => {
-        const cfg = PRIORITY_CONFIG[p];
-        const isSelected = value === p;
+      {PRIORITY_ORDER.map(priority => {
+        const config = PRIORITY_CONFIG[priority];
+        const isSelected = value === priority;
         return (
           <button
-            key={p}
+            key={priority}
             type="button"
             aria-pressed={isSelected}
-            onClick={() => onChange(p)}
+            onClick={() => onChange(priority)}
             className={`inline-flex items-center gap-[6px] text-[12px] font-ui py-[3px] px-[10px] rounded-full border cursor-pointer transition-colors duration-150 ${
               isSelected
                 ? 'border-slate bg-slate-soft text-slate-ink font-medium'
                 : 'border-chalk bg-transparent text-ash hover:border-slate'
             }`}
           >
-            <span className="w-[6px] h-[6px] rounded-full shrink-0" style={{ background: cfg.dot }} />
-            {cfg.label}
+            <span className="w-[6px] h-[6px] rounded-full shrink-0" style={{ background: config.dot }} />
+            {config.label}
           </button>
         );
       })}
@@ -110,7 +121,7 @@ function LabelPicker({
 }) {
   const toggle = (key: LabelKey) => {
     onChange(
-      value.includes(key) ? value.filter(l => l !== key) : [...value, key]
+      value.includes(key) ? value.filter(label => label !== key) : [...value, key]
     );
   };
   return (
@@ -143,6 +154,7 @@ export function TaskModal({
   mode = 'view',
   columnId,
   columnOptions = [],
+  teamMembers = [],
   onClose,
   onSave,
   onCreate,
@@ -239,6 +251,7 @@ export function TaskModal({
         due:         draft.due     || undefined,
         sprint:      draft.sprint  || undefined,
         subtasks:    (draft.subtasks ?? []).length > 0 ? draft.subtasks : undefined,
+        assignees:   (draft.assignees ?? []).length > 0 ? draft.assignees : undefined,
       },
       targetColumnId
     );
@@ -255,17 +268,17 @@ export function TaskModal({
   const addSubtaskToDraft = () => {
     const text = newSubtaskText.trim();
     if (!text) return;
-    setDraft(d => d ? {
-      ...d,
-      subtasks: [...(d.subtasks ?? []), { id: `s${Date.now()}`, text, done: false }],
-    } : d);
+    setDraft(draft => draft ? {
+      ...draft,
+      subtasks: [...(draft.subtasks ?? []), { id: `s${Date.now()}`, text, done: false }],
+    } : draft);
     setNewSubtaskText('');
   };
 
   if (!task && !isCreating) return null;
 
-  const statusCfg   = task ? STATUS_CONFIG[task.status] : null;
-  const priorityCfg = task ? PRIORITY_CONFIG[task.priority] : null;
+  const statusConfig   = task ? STATUS_CONFIG[task.status] : null;
+  const priorityConfig = task ? PRIORITY_CONFIG[task.priority] : null;
   const subtasksForDisplay = (isEditing || isCreating) ? (draft?.subtasks ?? []) : (task?.subtasks ?? []);
   const doneSubs = subtasksForDisplay.filter(s => s.done).length;
   const totalSubs = subtasksForDisplay.length;
@@ -304,20 +317,20 @@ export function TaskModal({
           <div className="flex-1 overflow-y-auto p-[36px] min-w-0">
 
             {/* Breadcrumb — view/edit only */}
-            {!isCreating && task && statusCfg && (
+            {!isCreating && task && statusConfig && (
               <p
-                aria-label={`${task.id}, status: ${statusCfg.label}${task.sprint ? `, ${task.sprint}` : ''}`}
+                aria-label={`Task #${task.id.slice(-5).toUpperCase()}, status: ${statusConfig.label}${task.sprint ? `, ${task.sprint}` : ''}`}
                 className="flex items-center gap-[8px] mb-[14px] flex-wrap"
               >
-                <span className="font-mono text-[11px] text-ash">{task.id}</span>
+                <span className="font-mono text-[11px] text-ash">{`#${task.id.slice(-5).toUpperCase()}`}</span>
                 <span aria-hidden="true" className="text-chalk">·</span>
                 <span className="inline-flex items-center gap-[5px]">
                   <span
                     aria-hidden="true"
                     className="w-[7px] h-[7px] rounded-full inline-block shrink-0"
-                    style={{ background: statusCfg.dot }}
+                    style={{ background: statusConfig.dot }}
                   />
-                  <span className="font-ui text-[11px] text-soot">{statusCfg.label}</span>
+                  <span className="font-ui text-[11px] text-soot">{statusConfig.label}</span>
                 </span>
                 {task.sprint && (
                   <>
@@ -647,23 +660,62 @@ export function TaskModal({
                 </>
               )}
 
-              {/* Assignees — read-only in view/edit; hidden in create */}
-              {!isCreating && (
+              {/* Assignees */}
+              {(isEditing || isCreating || (task?.assignees ?? []).length > 0) && (
                 <>
                   <MetaTerm>Assignees</MetaTerm>
                   <MetaDetail>
-                    <ul className="list-none m-0 p-0 flex flex-col gap-[8px]">
-                      {(task?.assignees ?? []).map(id => (
-                        <li key={id} className="flex items-center gap-[9px]">
-                          <Avatar name={personName(id)} size={24} />
-                          <span className="text-[13px] text-soot font-ui">{personName(id)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {isEditing && (
-                      <Button variant="ghost" size="sm" className="mt-[8px]">
-                        <Icon name="plus" size={12} color="var(--ash)" /> Add
-                      </Button>
+                    {isEditing || isCreating ? (
+                      teamMembers.length > 1 ? (
+                        <ul className="list-none m-0 p-0 flex flex-col gap-[4px]">
+                          {teamMembers.map(member => {
+                            const isAssigned = (draft?.assignees ?? []).includes(member.id);
+                            return (
+                              <li key={member.id}>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDraft(draft => draft ? {
+                                      ...draft,
+                                      assignees: isAssigned
+                                        ? (draft.assignees ?? []).filter(id => id !== member.id)
+                                        : [...(draft.assignees ?? []), member.id],
+                                    } : draft)
+                                  }
+                                  className={`w-full flex items-center gap-[9px] px-[8px] py-[5px] rounded-[6px] text-left transition-colors duration-150 ${
+                                    isAssigned ? 'bg-slate-soft' : 'hover:bg-bone'
+                                  }`}
+                                >
+                                  <Avatar name={member.name} size={22} />
+                                  <span className="text-[13px] text-soot font-ui flex-1 truncate">{member.name}</span>
+                                  {isAssigned && (
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--slate)" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                                      <polyline points="5 12 10 17 19 7" />
+                                    </svg>
+                                  )}
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <p className="text-[12px] text-ash font-ui m-0">
+                          {teamMembers.length === 1 ? 'You\'re the only member on this team.' : 'No team members found.'}
+                        </p>
+                      )
+                    ) : (
+                      <ul className="list-none m-0 p-0 flex flex-col gap-[8px]">
+                        {(task?.assignees ?? []).map(id => {
+                          const member = teamMembers.find(member => member.id === id);
+                          const name = member?.name ?? personName(id);
+                          return (
+                            <li key={id} className="flex items-center gap-[9px]">
+                              <Avatar name={name} size={24} />
+                              <span className="text-[13px] text-soot font-ui">{name}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
                   </MetaDetail>
                 </>
@@ -675,13 +727,13 @@ export function TaskModal({
                 {isEditing || isCreating ? (
                   <PriorityPicker
                     value={draft?.priority ?? 'med'}
-                    onChange={p => setDraft(d => d ? { ...d, priority: p } : d)}
+                    onChange={priority => setDraft(draft => draft ? { ...draft, priority: priority } : draft)}
                   />
                 ) : (
-                  priorityCfg && (
+                  priorityConfig && (
                     <span className="inline-flex items-center gap-[7px]">
-                      <span aria-hidden="true" className="w-[8px] h-[8px] rounded-full inline-block shrink-0" style={{ background: priorityCfg.dot }} />
-                      <span className="text-[13px] text-soot font-ui">{priorityCfg.label}</span>
+                      <span aria-hidden="true" className="w-[8px] h-[8px] rounded-full inline-block shrink-0" style={{ background: priorityConfig.dot }} />
+                      <span className="text-[13px] text-soot font-ui">{priorityConfig.label}</span>
                     </span>
                   )
                 )}
@@ -694,14 +746,13 @@ export function TaskModal({
                   <MetaDetail>
                     {isEditing || isCreating ? (
                       <input
-                        type="text"
+                        type="date"
                         value={draft?.due ?? ''}
-                        onChange={e => setDraft(d => d ? { ...d, due: e.target.value } : d)}
-                        placeholder="e.g. May 10"
+                        onChange={e => setDraft(draft => draft ? { ...draft, due: e.target.value } : draft)}
                         className={FIELD_CLS}
                       />
                     ) : (
-                      <time className="text-[13px] text-soot font-ui">{task?.due}</time>
+                      <time className="text-[13px] text-soot font-ui">{task?.due ? formatDate(task.due) : ''}</time>
                     )}
                   </MetaDetail>
                 </>
@@ -757,7 +808,7 @@ export function TaskModal({
                   <MetaTerm>Created</MetaTerm>
                   <MetaDetail>
                     <span className="text-[13px] text-soot font-ui">
-                      {task.createdAt}{task.createdBy ? ` by ${personName(task.createdBy)}` : ''}
+                      {formatDate(task.createdAt)}{task.createdBy ? ` by ${resolveMember(task.createdBy, teamMembers)}` : ''}
                     </span>
                   </MetaDetail>
                 </>
