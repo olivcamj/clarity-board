@@ -2,7 +2,7 @@
 
 import { AvatarStack } from '../ui/Avatar';
 import { Button } from '../ui/Button';
-import { Spark } from '../ui/Spark';
+import { TopBar } from './TopBar';
 
 interface BoardHeaderProps {
   sprintCode: string;    // "SPRINT 14 · APR 22 – MAY 5"
@@ -29,49 +29,7 @@ export function BoardHeader({
 }: BoardHeaderProps) {
   return (
     <header>
-      {/* ── Top nav ─────────────────────────────── */}
-      <nav
-        className="flex items-center border-b border-chalk px-[24px] py-[12px] bg-bone"
-        aria-label="Board navigation"
-      >
-        {/* Logo + sprint label */}
-        <div className="flex items-baseline gap-[10px] shrink-0">
-          <span className="font-display text-[20px] text-ink leading-none">Board</span>
-          <span className="font-ui text-[12px] text-ash italic">{sprintLabel}</span>
-        </div>
-
-        {/* Search */}
-        <div className="flex-1 flex justify-center px-[32px]">
-          <label className="flex items-center gap-[8px] bg-paper border border-chalk rounded-[8px] px-[12px] py-[7px] w-full max-w-[480px] cursor-text">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ash)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Search tasks, people, labels…"
-              value={searchQuery}
-              onChange={e => onSearchChange(e.target.value)}
-              className="bg-transparent border-0 outline-none flex-1 text-[13px] font-ui text-ink min-w-0"
-              aria-label="Search tasks, people, labels"
-            />
-          </label>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-[8px] shrink-0">
-          <Button type="button" variant="ghost" size="icon-sm" aria-label="Notifications">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </Button>
-          <Button type="button" variant="solid" tone="ember" size="sm">
-            <Spark size={11} color="#fff" />
-            Ask Clarity
-          </Button>
-        </div>
-      </nav>
+      <TopBar title="Board" subtitle={sprintLabel} searchQuery={searchQuery} onSearchChange={onSearchChange} />
 
       {/* ── Sprint header ────────────────────────── */}
       <div className="flex items-end justify-between px-[24px] py-[20px] border-b border-chalk bg-paper">
