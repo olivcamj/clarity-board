@@ -15,6 +15,9 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LABELS, PEOPLE_BY_ID } from '../../data/labels';
 import { useTasks } from '../../hooks/useTasks';
+import { useWorkspace } from '../../lib/WorkspaceContext';
+import { useAuthToken } from '../../lib/auth/useAuthToken';
+import { getTeamMembers, type TeamMember } from '../../lib/api/teams';
 import type { Task, Status } from '@/types/task';
 
 // ── Column metadata ────────────────────────────────────────────────────────────
@@ -68,22 +71,52 @@ function TaskBoardInner() {
     tasks,
     loading,
     error,
+    operationError,
+    clearOperationError,
     fetchTasks,
     createTask,
     updateTask,
     toggleSubtask,
   } = useTasks(boardId);
 
+  const { boardsByTeam } = useWorkspace();
+  const getToken = useAuthToken();
+
+  const currentBoard = useMemo(() => {
+    for (const boards of Object.values(boardsByTeam)) {
+      const found = boards.find(b => b.id === boardId);
+      if (found) return found;
+    }
+    return null;
+  }, [boardsByTeam, boardId]);
+
   const [activeId, setActiveId]           = useState<string | null>(null);
   const [searchQuery, setSearchQuery]     = useState('');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  // null = closed, string = creating in that column, 'header' = column picker
   const [createColumnId, setCreateColumnId] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers]       = useState<TeamMember[]>([]);
 
   // Fetch tasks whenever boardId changes
   useEffect(() => {
     if (boardId) fetchTasks();
   }, [boardId, fetchTasks]);
+
+  // Find which team owns this board, then fetch its members
+  useEffect(() => {
+    if (!boardId) return;
+    const teamId = Object.keys(boardsByTeam).find(teamId =>
+      boardsByTeam[teamId].some(board => board.id === boardId)
+    );
+    if (!teamId) return;
+    getToken().then(token => getTeamMembers(token, teamId)).then(setTeamMembers).catch(() => {});
+  }, [boardId, boardsByTeam, getToken]);
+
+  // Auto-dismiss operation errors after 4 seconds
+  useEffect(() => {
+    if (!operationError) return;
+    const timer = setTimeout(clearOperationError, 4000);
+    return () => clearTimeout(timer);
+  }, [operationError, clearOperationError]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -99,14 +132,7 @@ function TaskBoardInner() {
   // Header derived data
   const doneTasks = tasks.filter(t => t.status === 'done').length;
   const progress  = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
-  const teamNames = [
-    ...new Set(
-      tasks
-        .flatMap(t => t.assignees ?? [])
-        .map(id => PEOPLE_BY_ID[id])
-        .filter((n): n is string => Boolean(n))
-    ),
-  ];
+  const teamNames = teamMembers.map(m => m.name);
   const columnOptions = Object.entries(columns).map(([id, col]) => ({ id, name: col.name }));
 
   // Filtered columns for search
@@ -206,13 +232,13 @@ function TaskBoardInner() {
     );
   }
 
-  // ── Error state ──────────────────────────────────────────────────────────────
+  // ── Fatal load error (board couldn't load at all) ────────────────────────────
 
-  if (error) {
+  if (error && tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen" style={{ background: 'var(--paper)' }}>
-        <p className="font-ui text-red-500 text-sm">{error}</p>
-        <button onClick={fetchTasks} className="mt-2 font-ui text-xs text-smoke underline">
+        <p className="font-ui text-[13px] mb-[8px]" style={{ color: 'var(--rose)' }}>{error}</p>
+        <button onClick={fetchTasks} className="font-ui text-[12px] text-ash underline">
           Retry
         </button>
       </div>
@@ -226,7 +252,7 @@ function TaskBoardInner() {
       <BoardHeader
         sprintCode="SPRINT 14 · APR 22 – MAY 5"
         sprintLabel="Sprint 14, looking sharp"
-        boardName="The board"
+        boardName={currentBoard?.name ?? 'The Board'}
         subtitle={`${doneTasks} of ${tasks.length} done — you're on track.`}
         progress={progress}
         teamNames={teamNames}
@@ -327,6 +353,7 @@ function TaskBoardInner() {
       {selectedTask && (
         <TaskModal
           task={selectedTask}
+          teamMembers={teamMembers}
           onClose={() => setSelectedTaskId(null)}
           onSave={async (updated) => {
             await updateTask(updated.id, updated);
@@ -340,11 +367,38 @@ function TaskBoardInner() {
       {createColumnId && (
         <TaskModal
           mode="create"
+          teamMembers={teamMembers}
           columnId={createColumnId === 'header' ? undefined : createColumnId}
           columnOptions={createColumnId === 'header' ? columnOptions : undefined}
           onClose={() => setCreateColumnId(null)}
           onCreate={handleCreateTask}
         />
+      )}
+
+      {/* Operation error toast */}
+      {operationError && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fixed bottom-[24px] left-1/2 -translate-x-1/2 z-50 flex items-center gap-[10px] px-[16px] py-[11px] rounded-[10px] shadow-[var(--shadow-3)]"
+          style={{ background: 'var(--ink)', maxWidth: 400 }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--rose)" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          <p className="font-ui text-[13px] text-white m-0 flex-1">{operationError}</p>
+          <button
+            type="button"
+            onClick={clearOperationError}
+            aria-label="Dismiss"
+            className="text-ash hover:text-white transition-colors duration-150 shrink-0"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       )}
     </div>
   );
