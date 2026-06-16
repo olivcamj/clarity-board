@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { AppSidebar } from '../components/AppSidebar';
-import { Button } from '../ui/Button';
-import { SegmentedControl } from '../ui/SegmentedControl';
-import { Spark } from '../ui/Spark';
-import { Toggle } from '../ui/Toggle';
+import { Button } from '../../ui/Button';
+import { SegmentedControl } from '../../ui/SegmentedControl';
+import { Spark } from '../../ui/Spark';
+import { Toggle } from '../../ui/Toggle';
 
 type SettingsSection = 'general' | 'members' | 'clarity-ai' | 'billing' | 'danger-zone';
 type DefaultView     = 'board' | 'table' | 'list';
@@ -203,10 +202,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--paper)' }}>
-      <AppSidebar />
-
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--paper)' }}>
 
         {/* Top nav */}
         <nav
@@ -296,6 +292,5 @@ export default function SettingsPage() {
           </main>
         </div>
       </div>
-    </div>
   );
 }
