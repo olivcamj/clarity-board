@@ -16,18 +16,13 @@ export async function apiClient<T = unknown>(
     },
   });
 
-  console.log(
-    '[API REQUEST]',
-    `${API_URL}/${endpoint}`,
-    options?.method ?? 'GET'
-  );
-
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `Request failed: ${res.status}`);
   }
 
-  console.log('STATUS', res.status);
-  const data: unknown = await res.json();
-  return data as T;
+  if (res.status === 204) return undefined as T;
+
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
