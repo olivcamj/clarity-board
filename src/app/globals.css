@@ -32,7 +32,7 @@
 
   /* Semantic */
   --sage:  #7A8C6E; --sage-soft:  #DBE2D2;
-  --rose:  #C98277; --rose-soft:  #F2D9D2;
+  --rose:  #C98277; --rose-hot: #B0655A; --rose-soft:  #F2D9D2;
   --sky:   #6C8AA6; --sky-soft:   #D5DFE8;
   --ochre: #C8A04E; --ochre-soft: #EFE1BF;
   --plum:  #9273A1; --plum-soft:  #E5DBEA;
@@ -75,7 +75,7 @@
   --ember-soft: #3A251A;
 
   --sage:  #9AAD8C; --sage-soft:  #2A3226;
-  --rose:  #D9968B; --rose-soft:  #362723;
+  --rose:  #D9968B; --rose-hot: #E8A898; --rose-soft:  #362723;
   --sky:   #8EA8BF; --sky-soft:   #232B32;
   --ochre: #D9B86A; --ochre-soft: #342D1E;
   --plum:  #B59CC2; --plum-soft:  #2B2130;
@@ -123,6 +123,7 @@ body {
   --color-sage:       var(--sage);
   --color-sage-soft:  var(--sage-soft);
   --color-rose:       var(--rose);
+  --color-rose-hot:   var(--rose-hot);
   --color-rose-soft:  var(--rose-soft);
   --color-sky:        var(--sky);
   --color-sky-soft:   var(--sky-soft);
