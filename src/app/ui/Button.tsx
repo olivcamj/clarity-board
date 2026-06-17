@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'solid' | 'outline' | 'ghost';
-  tone?: 'primary' | 'ember';
+  tone?: 'primary' | 'ember' | 'rose';
   size?: 'sm' | 'md' | 'icon-sm' | 'icon-md';
 }
 
@@ -16,14 +16,17 @@ const VARIANT_TONE: Record<string, Record<string, string>> = {
   solid: {
     primary: 'bg-slate text-white hover:bg-slate-hot disabled:bg-chalk disabled:text-smoke',
     ember:   'bg-ember text-white hover:bg-ember-hot disabled:bg-chalk disabled:text-smoke',
+    rose:    'bg-rose text-white hover:bg-rose-hot disabled:bg-chalk disabled:text-smoke',
   },
   outline: {
     primary: 'border border-slate text-slate bg-transparent hover:bg-slate-soft',
     ember:   'border border-ember text-ember bg-transparent hover:bg-ember-soft',
+    rose:    'border border-rose text-rose bg-transparent hover:bg-rose-soft',
   },
   ghost: {
     primary: 'text-ash bg-transparent hover:bg-sand',
     ember:   'text-ember bg-transparent hover:bg-ember-soft',
+    rose:    'text-rose bg-transparent hover:bg-rose-soft',
   },
 };
 
