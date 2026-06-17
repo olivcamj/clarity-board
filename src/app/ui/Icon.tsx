@@ -6,7 +6,9 @@ export type IconName =
   | "comment"
   | "attach"
   | "link"
-  | "plus";
+  | "plus"
+  | "clock"
+  | "layers";
 
 export interface IconProps {
   name: IconName;
@@ -61,6 +63,18 @@ export function Icon({
       <>
         <path d="M12 5v14" />
         <path d="M5 12h14" />
+      </>
+    ),
+    clock: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 3" />
+      </>
+    ),
+    layers: (
+      <>
+        <polygon points="12 2 2 8 12 14 22 8 12 2" />
+        <path d="M2 13l10 6 10-6" />
       </>
     ),
   };
