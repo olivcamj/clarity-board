@@ -13,12 +13,16 @@ export interface BackendUser {
     id: string;
     title: string;
     status: string;
+    due?: string | null;
+    priority?: string;
     board: { id: string; name: string };
   }>;
-  assignedTasks: Array<{
+  tasks: Array<{
     id: string;
     title: string;
     status: string;
+    due?: string | null;
+    priority?: string;
     board: { id: string; name: string };
   }>;
 }
