@@ -5,104 +5,23 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Spark } from '../ui/Spark';
 import { Avatar } from '../ui/Avatar';
+import { Icon } from '../ui/Icon';
 import { useWorkspace } from '../lib/WorkspaceContext';
-
-function BoardIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="5" height="18" rx="1" />
-      <rect x="10" y="3" width="5" height="12" rx="1" />
-      <rect x="17" y="3" width="5" height="16" rx="1" />
-    </svg>
-  );
-}
-
-function TableIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-    </svg>
-  );
-}
-
-function TimelineIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-      <path d="M3 6h11M8 12h9M3 18h7" strokeWidth="2.5" />
-    </svg>
-  );
-}
-
-function InboxIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M22 12h-6l-2 3H10l-2-3H2" />
-      <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-    </svg>
-  );
-}
-
-function ActivityIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-    </svg>
-  );
-}
-
-function PeopleIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function TeamsIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="7" width="8" height="8" rx="1.5" />
-      <rect x="14" y="7" width="8" height="8" rx="1.5" />
-      <path d="M10 11h4" />
-    </svg>
-  );
-}
-
-function HomeIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
-      <path d="M9 21V12h6v9" />
-    </svg>
-  );
-}
-
 
 // VIEW_NAV_ITEMS hidden until post-MVP (Table, List, Timeline not yet implemented)
 // const VIEW_NAV_ITEMS = [
-//   { href: '/taskboard', label: 'Board',    icon: <BoardIcon />    },
-//   { href: '/table',     label: 'Table',    icon: <TableIcon />    },
-//   { href: '/list',      label: 'List',     icon: <ListIcon />     },
-//   { href: '/timeline',  label: 'Timeline', icon: <TimelineIcon /> },
+//   { href: '/taskboard', label: 'Board',    icon: <Icon name="board" size={15} />    },
+//   { href: '/table',     label: 'Table',    icon: <Icon name="table" size={15} />    },
+//   { href: '/list',      label: 'List',     icon: <Icon name="list" size={15} />     },
+//   { href: '/timeline',  label: 'Timeline', icon: <Icon name="timeline" size={15} /> },
 // ] as const;
 
 const WORKSPACE_NAV_ITEMS = [
-  { href: '/dashboard', label: 'Home',     icon: <HomeIcon />,     badge: undefined as number | undefined },
-  { href: '/dashboard', label: 'Teams',    icon: <TeamsIcon />,    badge: undefined as number | undefined },
-  { href: '/inbox',     label: 'Inbox',    icon: <InboxIcon />,    badge: 4 as number | undefined },
-  { href: '/activity',  label: 'Activity', icon: <ActivityIcon />, badge: undefined },
-  { href: '/people',    label: 'People',   icon: <PeopleIcon />,   badge: undefined },
+  { href: '/dashboard', label: 'Home',     icon: <Icon name="home" size={15} />,     badge: undefined as number | undefined },
+  { href: '/teams',     label: 'Teams',    icon: <Icon name="teams" size={15} />,    badge: undefined as number | undefined },
+  { href: '/inbox',     label: 'Inbox',    icon: <Icon name="inbox" size={15} />,    badge: 4 as number | undefined },
+  { href: '/activity',  label: 'Activity', icon: <Icon name="activity" size={15} />, badge: undefined },
+  { href: '/people',    label: 'People',   icon: <Icon name="people" size={15} />,   badge: undefined },
 ] as const;
 
 
@@ -304,7 +223,7 @@ export function AppSidebar() {
                 {allBoards.length === 0 && (
                   <li>
                     <Link
-                      href="/dashboard"
+                      href="/teams"
                       className="flex items-center gap-[9px] px-[8px] py-[6px] rounded-[6px] text-[12px] font-ui text-ash transition-colors duration-150 hover:text-ink"
                     >
                       + Create a board
@@ -346,20 +265,7 @@ export function AppSidebar() {
             aria-label="Settings"
             className="shrink-0 flex items-center justify-center w-[28px] h-[28px] rounded-[6px] text-ash transition-colors duration-150 hover:bg-sand hover:text-ink"
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
+            <Icon name="settings" size={15} />
           </Link>
           </>
         )}
