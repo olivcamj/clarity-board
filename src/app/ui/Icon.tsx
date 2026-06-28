@@ -19,7 +19,8 @@ export type IconName =
   | "teams"
   | "home"
   | "shield"
-  | "settings";
+  | "settings"
+  | "logout";
 
 export interface IconProps {
   name: IconName;
@@ -128,6 +129,13 @@ export function Icon({
       <>
         <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
         <path d="M9 21V12h6v9" />
+      </>
+    ),
+    logout: (
+      <>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
       </>
     ),
     shield: <path d="M12 2L15 8h6l-4.8 3.5 1.8 6L12 14 6 17.5l1.8-6L3 8h6L12 2z" />,
