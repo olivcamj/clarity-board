@@ -235,6 +235,7 @@ export class UserService {
         id: m.team.id,
         name: m.team.name,
         role: m.role,
+        workspaceId: m.team.workspaceId ?? null,
       })),
     };
   }
