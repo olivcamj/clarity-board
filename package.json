@@ -10,7 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.35.3",
+    "@clerk/clerk-react": "^5.61.6",
     "express": "^5.1.0",
     "next": "15.4.2",
     "react": "19.1.0",
