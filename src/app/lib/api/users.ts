@@ -8,7 +8,7 @@ export interface BackendUser {
   role: string;
   createdAt: string;
   updatedAt: string;
-  teams: Array<{ id: string; name: string; role: string }>;
+  teams: Array<{ id: string; name: string; role: string; workspaceId: string | null }>;
   createdTasks: Array<{
     id: string;
     title: string;
