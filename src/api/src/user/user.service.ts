@@ -231,11 +231,11 @@ export class UserService {
     // Reshape memberships → teams for the frontend's BackendUser shape
     return {
       ...user,
-      teams: user.memberships.map((m) => ({
-        id: m.team.id,
-        name: m.team.name,
-        role: m.role,
-        workspaceId: m.team.workspaceId ?? null,
+      teams: user.memberships.map((membership) => ({
+        id: membership.team.id,
+        name: membership.team.name,
+        role: membership.role,
+        workspaceId: membership.team.workspaceId ?? null,
       })),
     };
   }
