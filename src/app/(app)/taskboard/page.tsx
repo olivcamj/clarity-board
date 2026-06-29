@@ -31,7 +31,7 @@ function currentWeekRange(): string {
   return `${formattedDate(sun)} – ${formattedDate(sat)}`;
 }
 
-// ── Column metadata ────────────────────────────────────────────────────────────
+//  Column metadata 
 
 const COLUMN_META: Record<string, { dot: string; badge: string; status: Status }> = {
   todo:      { dot: 'var(--chalk)', badge: 'next up',       status: 'todo'   },
@@ -53,7 +53,7 @@ const COLUMN_NAMES: Record<string, string> = {
   approved:  'Approved',
 };
 
-// ── Derive column structure from flat task list ────────────────────────────────
+// Derive column structure from flat task list 
 
 function tasksToColumns(tasks: Task[]): Record<string, { name: string; items: Task[] }> {
   const cols: Record<string, { name: string; items: Task[] }> = {
@@ -68,11 +68,11 @@ function tasksToColumns(tasks: Task[]): Record<string, { name: string; items: Ta
   return cols;
 }
 
-// ── Socket (module-level, shared) ─────────────────────────────────────────────
+//  Socket (module-level, shared) 
 
 const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL);
 
-// ── Inner board component (needs Suspense for useSearchParams) ────────────────
+//  Inner board component (needs Suspense for useSearchParams) 
 
 function TaskBoardInner() {
   const searchParams = useSearchParams();
@@ -167,7 +167,7 @@ function TaskBoardInner() {
       })()
     : columns;
 
-  // ── Event handlers ───────────────────────────────────────────────────────────
+  //  Event handlers 
 
   const handleCreateTask = async (
     fields: Pick<Task, 'title' | 'description' | 'priority' | 'labels' | 'due' | 'sprint' | 'subtasks'>,
@@ -224,7 +224,7 @@ function TaskBoardInner() {
     }
   };
 
-  // ── No boardId state ─────────────────────────────────────────────────────────
+  //  No boardId state 
 
   if (!boardId) {
     return (
@@ -234,7 +234,7 @@ function TaskBoardInner() {
     );
   }
 
-  // ── Loading state ────────────────────────────────────────────────────────────
+  //  Loading state 
 
   if (loading) {
     return (
@@ -244,7 +244,7 @@ function TaskBoardInner() {
     );
   }
 
-  // ── Fatal load error (board couldn't load at all) ────────────────────────────
+  // Fatal load error (board couldn't load at all) 
 
   if (error && tasks.length === 0) {
     return (
@@ -257,9 +257,9 @@ function TaskBoardInner() {
     );
   }
 
-  // ── Board ────────────────────────────────────────────────────────────────────
+  //  Board
 
-  return (
+    return (
     <div className="flex flex-col min-h-screen" style={{ background: 'var(--paper)' }}>
       <BoardHeader
         sprintCode={currentWeekRange()}
