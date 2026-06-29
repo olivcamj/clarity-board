@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { useClerk } from '@clerk/nextjs';
 import { Spark } from '../ui/Spark';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
@@ -19,7 +20,7 @@ import { useWorkspace } from '../lib/WorkspaceContext';
 const WORKSPACE_NAV_ITEMS = [
   { href: '/dashboard', label: 'Home',     icon: <Icon name="home" size={15} />,     badge: undefined as number | undefined },
   { href: '/teams',     label: 'Teams',    icon: <Icon name="teams" size={15} />,    badge: undefined as number | undefined },
-  { href: '/inbox',     label: 'Inbox',    icon: <Icon name="inbox" size={15} />,    badge: 4 as number | undefined },
+  { href: '/inbox',     label: 'Inbox',    icon: <Icon name="inbox" size={15} />,    badge: undefined as number | undefined },
   { href: '/activity',  label: 'Activity', icon: <Icon name="activity" size={15} />, badge: undefined },
   { href: '/people',    label: 'People',   icon: <Icon name="people" size={15} />,   badge: undefined },
 ] as const;
@@ -55,8 +56,8 @@ function NavItem({
         'flex items-center gap-[9px] px-[8px] py-[6px] rounded-[6px] text-[13px] font-ui',
         'transition-colors duration-150 w-full',
         isActive
-          ? 'bg-bone text-ink font-medium'
-          : 'text-ash hover:bg-bone hover:text-ink',
+          ? 'bg-bone text-ink font-medium active:bg-sand'
+          : 'text-ash hover:bg-bone hover:text-ink active:bg-sand',
       ].join(' ')}
     >
       {icon}
@@ -75,14 +76,15 @@ function NavItem({
 
 
 
-const WORKSPACE = { name: 'Kiln Studio', memberCount: 6 };
 const SUGGESTIONS_PENDING: number = 3;
 
 export function AppSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentBoardId = searchParams.get('boardId');
-  const { teams, boardsByTeam, user, loading } = useWorkspace();
+  const { teams, boardsByTeam, user, workspaceName, loading } = useWorkspace();
+  const { signOut } = useClerk();
+  const router = useRouter();
   const allBoards = teams.flatMap(team => boardsByTeam[team.id] ?? []);
 
   return (
@@ -107,19 +109,19 @@ export function AppSidebar() {
         {/* Workspace selector */}
         <button
           type="button"
-          aria-label={`${WORKSPACE.name} workspace — ${WORKSPACE.memberCount} members. Click to switch.`}
-          className="flex items-center gap-[9px] w-full px-[8px] py-[8px] rounded-[8px] text-left hover:bg-sand transition-colors duration-150 mb-[8px]"
+          aria-label={`${workspaceName} workspace. Click to switch.`}
+          className="flex items-center gap-[9px] w-full px-[8px] py-[8px] rounded-[8px] text-left hover:bg-sand active:bg-biscuit transition-colors duration-150 mb-[8px]"
         >
           <div
             className="flex items-center justify-center rounded-[6px] font-ui font-semibold text-[11px] shrink-0"
             style={{ width: 26, height: 26, background: 'var(--ochre-soft)', color: 'var(--ochre)', border: '1.5px solid var(--ochre)' }}
             aria-hidden="true"
           >
-            {WORKSPACE.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+            {workspaceName.split(' ').map(word => word[0]).join('').slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-ui font-medium text-ink text-[13px] m-0 truncate">{WORKSPACE.name}</p>
-            <p className="font-ui text-ash text-[11px] m-0">{WORKSPACE.memberCount} members</p>
+            <p className="font-ui font-medium text-ink text-[13px] m-0 truncate">{workspaceName}</p>
+            <p className="font-ui text-ash text-[11px] m-0">{teams.length} team{teams.length !== 1 ? 's' : ''}</p>
           </div>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ash)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <path d="m6 9 6 6 6-6" />
@@ -130,7 +132,7 @@ export function AppSidebar() {
         <button
           type="button"
           aria-label="Ask Clarity (⌘K)"
-          className="flex items-center gap-[8px] w-full px-[10px] py-[8px] rounded-[8px] text-white font-ui font-medium text-[13px] cursor-pointer transition-colors duration-150 mb-[6px]"
+          className="flex items-center gap-[8px] w-full px-[10px] py-[8px] rounded-[8px] text-white font-ui font-medium text-[13px] cursor-pointer transition-[colors,opacity] duration-150 active:opacity-80 mb-[6px]"
           style={{ background: 'var(--ember)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--ember-hot)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'var(--ember)')}
@@ -260,13 +262,24 @@ export function AppSidebar() {
               </p>
             </div>
 
-          <Link
-            href="/settings"
-            aria-label="Settings"
-            className="shrink-0 flex items-center justify-center w-[28px] h-[28px] rounded-[6px] text-ash transition-colors duration-150 hover:bg-sand hover:text-ink"
-          >
-            <Icon name="settings" size={15} />
-          </Link>
+          <div className="flex items-center gap-[4px]">
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className="shrink-0 flex items-center justify-center w-[28px] h-[28px] rounded-[6px] text-ash transition-colors duration-150 hover:bg-sand hover:text-ink active:bg-biscuit"
+            >
+              <Icon name="settings" size={15} />
+            </Link>
+            <button
+              type="button"
+              title="Sign out"
+              aria-label="Sign out"
+              onClick={() => signOut(() => router.push('/sign-in'))}
+              className="shrink-0 flex items-center justify-center w-[28px] h-[28px] rounded-[6px] text-ash transition-colors duration-150 hover:bg-sand hover:text-ink active:bg-biscuit"
+            >
+              <Icon name="logout" size={15} />
+            </button>
+          </div>
           </>
         )}
       </div>
