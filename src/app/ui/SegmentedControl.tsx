@@ -40,8 +40,8 @@ export function SegmentedControl<T extends string>({
               'transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate',
               index > 0 ? 'border-l border-chalk' : '',
               isSelected
-                ? 'bg-paper text-ink font-medium shadow-[var(--shadow-1)]'
-                : 'bg-transparent text-ash hover:text-ink hover:bg-bone',
+                ? 'bg-paper text-ink font-medium shadow-[var(--shadow-1)] active:opacity-90'
+                : 'bg-transparent text-ash hover:text-ink hover:bg-bone active:bg-sand',
             ].filter(Boolean).join(' ')}
           >
             {option.icon}
