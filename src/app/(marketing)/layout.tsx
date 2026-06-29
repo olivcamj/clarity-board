@@ -1,11 +1,11 @@
 import {
   SignInButton,
-  SignUpButton,
   Show,
   UserButton,
 } from '@clerk/nextjs';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from '../ui/Button';
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,14 +14,15 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         <span className="font-semibold text-sm sm:text-base tracking-tight select-none">
           ClarityBoard
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-[8px]">
           <Show when="signed-out">
-            <SignInButton />
-            <SignUpButton asChild>
-              <button className="bg-[#3b6fb5] text-white rounded-full font-medium text-sm sm:text-base h-9 sm:h-10 px-4 sm:px-5 cursor-pointer">
-                Sign Up
-              </button>
-            </SignUpButton>
+            <Link href="/demo/dashboard">
+              <Button variant="ghost" size="sm">View demo</Button>
+            </Link>
+            {/* @ts-expect-error asChild works at runtime but not yet typed in this Clerk version */}
+            <SignInButton asChild>
+              <Button variant="outline" size="sm">Sign in</Button>
+            </SignInButton>
           </Show>
           <Show when="signed-in">
             <UserButton />
