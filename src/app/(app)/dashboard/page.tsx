@@ -1,11 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { startTransition, useMemo, useState } from 'react';
 import { useWorkspace } from '../../lib/WorkspaceContext';
-import { Button } from '../../ui/Button';
-import { Icon } from '../../ui/Icon';
+import { DashboardSkeleton } from './loading';
+import { useAuthToken } from '../../lib/auth/useAuthToken';
+import { updateTask as apiUpdateTask } from '../../lib/api/tasks';
 import { TopBar } from '../../components/TopBar';
+import { StatCards } from '../../components/dashboard/StatCards';
+import { MyTasksList, type MyTask } from '../../components/dashboard/MyTasksList';
+import { ClaritySuggestions } from '../../components/dashboard/ClaritySuggestions';
+import { ActivityFeed } from '../../components/dashboard/ActivityFeed';
+import { CreateMenu } from '../../components/dashboard/CreateMenu';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
+import type { Status } from '../../types/task';
 import type { Board } from '../../lib/api/boards';
 
 function greeting(name: string) {
@@ -14,173 +22,155 @@ function greeting(name: string) {
   return `Good ${time}, ${name.split(' ')[0]}`;
 }
 
-function BoardCard({ board }: { board: Board }) {
+function dateLine() {
+  return new Date()
+    .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    .toUpperCase();
+}
+
+function startOfDay(value: string) {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(value + 'T00:00:00') : new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function BoardCard({
+  board,
+  teamName,
+  onDelete,
+}: {
+  board: Board;
+  teamName: string;
+  onDelete: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <Link
-      href={`/taskboard?boardId=${board.id}`}
-      className="flex flex-col gap-[6px] p-[18px] rounded-[10px] border border-chalk bg-paper transition-colors duration-150 hover:border-slate no-underline group"
-    >
-      <span className="font-ui font-medium text-[14px] text-ink group-hover:text-slate transition-colors duration-150 leading-snug">
-        {board.name}
-      </span>
-      {board.taskCount !== undefined && (
-        <span className="font-mono text-[11px] text-ash">
-          {board.taskCount} task{board.taskCount !== 1 ? 's' : ''}
+    <div className="relative group">
+      <Link
+        href={`/taskboard?boardId=${board.id}`}
+        className="flex flex-col gap-[6px] p-[16px] rounded-[10px] border border-chalk bg-paper transition-colors duration-150 hover:border-slate no-underline"
+      >
+        <span className="font-ui font-medium text-[13px] text-ink group-hover:text-slate transition-colors duration-150 leading-snug pr-[20px]">
+          {board.name}
         </span>
-      )}
-    </Link>
-  );
-}
-
-function NewBoardCard({ teamId }: { teamId: string }) {
-  const { createBoard } = useWorkspace();
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function submit() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setLoading(true);
-    try {
-      await createBoard(teamId, trimmed);
-      setName('');
-      setCreating(false);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') submit();
-    if (e.key === 'Escape') { setCreating(false); setName(''); }
-  }
-
-  if (creating) {
-    return (
-      <div className="flex items-center gap-[8px] p-[14px] rounded-[10px] border border-slate bg-paper">
-        <input
-          autoFocus
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Board name…"
-          className="flex-1 text-[13px] font-ui bg-transparent border-0 outline-none text-ink placeholder:text-ash min-w-0"
-        />
-        <Button type="button" variant="solid" size="sm" onClick={submit} disabled={!name.trim() || loading}>
-          {loading ? '…' : 'Add'}
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => { setCreating(false); setName(''); }}>
-          Cancel
-        </Button>
+        <span className="font-mono text-[10px] text-ash">{teamName}</span>
+        {board.taskCount !== undefined && (
+          <span className="font-mono text-[10px] text-ash">
+            {board.taskCount} task{board.taskCount !== 1 ? 's' : ''}
+          </span>
+        )}
+      </Link>
+      <div className="absolute top-[8px] right-[8px]">
+        <button
+          type="button"
+          onClick={event => { event.preventDefault(); setMenuOpen(isOpen => !isOpen); }}
+          className="opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center w-[20px] h-[20px] rounded-[4px] text-ash hover:text-ink hover:bg-sand transition-all duration-150 font-ui text-[13px] leading-none"
+          aria-label="Board options"
+        >
+          ⋮
+        </button>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+            <div className="absolute right-0 top-[24px] z-20 bg-paper border border-chalk rounded-[8px] shadow-md py-[4px] min-w-[140px]">
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onDelete(); }}
+                className="w-full text-left px-[12px] py-[7px] font-ui text-[12px] text-rose hover:bg-rose-soft transition-colors duration-150"
+              >
+                Delete board
+              </button>
+            </div>
+          </>
+        )}
       </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => setCreating(true)}
-      className="flex items-center justify-center gap-[6px] p-[18px] rounded-[10px] border border-dashed border-chalk text-[13px] font-ui text-ash transition-colors duration-150 hover:border-slate hover:text-slate bg-transparent cursor-pointer w-full"
-    >
-      <Icon name="plus" size={13} color="currentColor" />
-      New board
-    </button>
+    </div>
   );
 }
 
-function NewTeamForm() {
-  const { createTeam } = useWorkspace();
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setLoading(true);
-    try {
-      await createTeam(trimmed);
-      setName('');
-      setOpen(false);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!open) {
-    return (
-      <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>
-        <Icon name="plus" size={13} color="var(--ash)" />
-        New team
-      </Button>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-[8px]">
-      <input
-        autoFocus
-        type="text"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Escape') { setOpen(false); setName(''); } }}
-        placeholder="Team name…"
-        className="text-[13px] font-ui bg-bone border border-chalk rounded-[6px] px-[10px] py-[6px] outline-none focus:border-slate transition-colors duration-150"
-      />
-      <Button type="submit" variant="solid" size="sm" disabled={!name.trim() || loading}>
-        {loading ? '…' : 'Create'}
-      </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => { setOpen(false); setName(''); }}>
-        Cancel
-      </Button>
-    </form>
-  );
-}
+type DeleteTarget = { boardId: string; boardName: string; teamId: string } | null;
 
 export default function DashboardPage() {
-  const { user, teams, boardsByTeam, loading, error } = useWorkspace();
+  const { user, teams, boardsByTeam, loading, error, refetch, deleteBoard } = useWorkspace();
+  const getToken = useAuthToken();
   const [searchQuery, setSearchQuery] = useState('');
+  // Optimistically hide tasks being marked done while the request is in flight
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
-        <TopBar title="Home" showHomeIcon searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-        <div className="px-[40px] py-[40px]">
-          {/* Header skeleton */}
-          <div className="flex items-start justify-between mb-[40px]">
-            <div className="flex flex-col gap-[12px]">
-              <div className="h-[38px] w-[260px] rounded-[8px] bg-chalk animate-pulse" aria-hidden="true" />
-              <div className="h-[13px] w-[80px] rounded bg-chalk animate-pulse" aria-hidden="true" />
-            </div>
-            <div className="h-[32px] w-[90px] rounded-[8px] bg-chalk animate-pulse" aria-hidden="true" />
-          </div>
+  // `/api/users/me/full` returns tasks straight from Prisma (status is the
+  // raw uppercase enum), unlike the per-board task endpoint which lowercases
+  // it via TaskResponseDto — normalize it here.
+  const myTasks = useMemo<MyTask[]>(() => {
+    if (!user) return [];
+    return user.tasks
+      .filter(task => task.status.toLowerCase() !== 'done' && !completingIds.has(task.id))
+      .map(task => ({
+        id: task.id,
+        title: task.title,
+        status: task.status.toLowerCase() as Status,
+        due: task.due,
+        board: task.board,
+      }))
+      .sort((taskA, taskB) => {
+        if (!taskA.due && !taskB.due) return 0;
+        if (!taskA.due) return 1;
+        if (!taskB.due) return -1;
+        return taskA.due.localeCompare(taskB.due);
+      })
+      .slice(0, 6);
+  }, [user, completingIds]);
 
-          {/* Team + board cards skeleton */}
-          <div className="flex flex-col gap-[36px]">
-            {[3, 2].map((cardCount, i) => (
-              <section key={i} aria-hidden="true">
-                <div className="flex items-center gap-[10px] mb-[14px]">
-                  <div className="h-[10px] w-[64px] rounded bg-chalk animate-pulse" />
-                  <div className="flex-1 h-px bg-chalk" />
-                </div>
-                <div className="grid gap-[12px]" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-                  {Array.from({ length: cardCount }).map((_, j) => (
-                    <div key={j} className="p-[18px] rounded-[10px] border border-chalk flex flex-col gap-[8px]">
-                      <div className="h-[14px] rounded bg-chalk animate-pulse" style={{ width: `${60 + j * 15}%` }} />
-                      <div className="h-[10px] w-[48px] rounded bg-chalk animate-pulse" />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  const stats = useMemo(() => {
+    if (!user) return { dueToday: 0, overdue: 0, inFlight: 0 };
+    const today = startOfDay(new Date().toISOString());
+    let dueToday = 0;
+    let overdue = 0;
+    let inFlight = 0;
+    for (const task of user.tasks) {
+      const status = task.status.toLowerCase();
+      if (status === 'done') continue;
+      if (status === 'doing' || status === 'review') inFlight++;
+      if (task.due) {
+        const due = startOfDay(task.due);
+        if (due < today) overdue++;
+        else if (due === today) dueToday++;
+      }
+    }
+    return { dueToday, overdue, inFlight };
+  }, [user]);
+
+  const allBoards = useMemo(
+    () => teams.flatMap(team => (boardsByTeam[team.id] ?? []).map(board => ({ board, teamName: team.name, teamId: team.id }))),
+    [teams, boardsByTeam]
+  );
+
+  async function handleBoardDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteBoard(deleteTarget.boardId, deleteTarget.teamId);
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
   }
+
+  function handleComplete(taskId: string) {
+    setCompletingIds(prev => new Set(prev).add(taskId));
+    startTransition(async () => {
+      try {
+        const token = await getToken();
+        await apiUpdateTask(token, taskId, { status: 'DONE' });
+      } finally {
+        refetch();
+      }
+    });
+  }
+
+  if (loading) return <DashboardSkeleton />;
 
   if (error) {
     return (
@@ -198,56 +188,59 @@ export default function DashboardPage() {
       <TopBar title="Home" showHomeIcon searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <div className="px-[40px] py-[40px]">
         {/* Page header */}
-        <div className="flex items-start justify-between mb-[40px]">
+        <div className="flex items-start justify-between mb-[24px]">
           <div>
-            <h1 className="font-display text-[38px] font-normal text-ink leading-[1.1] mb-[4px]">
+            <p className="font-mono text-[10px] text-ash tracking-[0.1em] uppercase mb-[6px]">
+              {dateLine()}
+            </p>
+            <h1 className="font-display text-[38px] font-normal text-ink leading-[1.1] m-0">
               {user?.name ? greeting(user.name) : 'Your workspace'}
             </h1>
-            <p className="font-ui text-[13px] text-ash m-0">
-              {teams.length === 0
-                ? 'Create a team to get started.'
-                : `${teams.length} team${teams.length !== 1 ? 's' : ''}`}
-            </p>
           </div>
-          <NewTeamForm />
+          <CreateMenu />
         </div>
 
-        {/* No teams empty state */}
-        {teams.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-[80px]">
-            <p className="font-ui text-[14px] text-ash text-center">
-              You&rsquo;re not part of any teams yet.
-            </p>
+        <StatCards dueToday={stats.dueToday} overdue={stats.overdue} inFlight={stats.inFlight} />
+
+        <div className="grid gap-[32px]" style={{ gridTemplateColumns: '1fr 360px' }}>
+          <MyTasksList tasks={myTasks} onComplete={handleComplete} searchQuery={searchQuery} />
+          <div>
+            <ClaritySuggestions />
+            <ActivityFeed />
           </div>
+        </div>
+
+        {/* No. II — Your boards */}
+        {allBoards.length > 0 && (
+          <section className="mt-[48px]">
+            <div className="mb-[14px]">
+              <p className="font-mono text-[10px] text-ember tracking-[0.1em] uppercase mb-[4px]">No. II</p>
+              <h2 className="font-display text-[28px] font-normal text-ink m-0">
+                Your <em>boards.</em>
+              </h2>
+            </div>
+            <div className="grid gap-[12px]" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+              {allBoards.map(({ board, teamName, teamId }) => (
+                <BoardCard
+                  key={board.id}
+                  board={board}
+                  teamName={teamName}
+                  onDelete={() => setDeleteTarget({ boardId: board.id, boardName: board.name, teamId })}
+                />
+              ))}
+            </div>
+          </section>
         )}
-
-        {/* Team sections */}
-        <div className="flex flex-col gap-[36px]">
-          {teams.map(team => {
-            const boards = boardsByTeam[team.id] ?? [];
-            return (
-              <section key={team.id}>
-                <div className="flex items-center gap-[10px] mb-[14px]">
-                  <h2 className="font-mono text-[11px] text-ash uppercase tracking-[0.08em] m-0 shrink-0">
-                    {team.name}
-                  </h2>
-                  <div className="flex-1 h-px bg-chalk" />
-                </div>
-
-                <div
-                  className="grid gap-[12px]"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
-                >
-                  {boards.map(board => (
-                    <BoardCard key={board.id} board={board} />
-                  ))}
-                  <NewBoardCard teamId={team.id} />
-                </div>
-              </section>
-            );
-          })}
-        </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={`Delete "${deleteTarget?.boardName}"?`}
+        message="This will permanently delete the board and all its tasks. This cannot be undone."
+        loading={deleting}
+        onConfirm={handleBoardDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
