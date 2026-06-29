@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { startTransition, useCallback, useOptimistic, useRef, useState } from 'react';
 import { useAuthToken } from '../lib/auth/useAuthToken';
 import {
   getTasksByBoard,
@@ -21,9 +21,37 @@ export type CreateTaskFields = Pick<
   'title' | 'description' | 'priority' | 'labels' | 'due' | 'sprint' | 'subtasks'
 > & { status?: Status };
 
+type OptimisticPatch =
+  | { type: 'update'; id: string; changes: Partial<Task> }
+  | { type: 'delete'; id: string }
+  | { type: 'toggleSubtask'; taskId: string; subtaskId: string };
+
+function applyPatch(state: Task[], patch: OptimisticPatch): Task[] {
+  switch (patch.type) {
+    case 'update':
+      return state.map(task => task.id === patch.id ? { ...task, ...patch.changes } : task);
+    case 'delete':
+      return state.filter(task => task.id !== patch.id);
+    case 'toggleSubtask':
+      return state.map(task =>
+        task.id !== patch.taskId ? task : {
+          ...task,
+          subtasks: (task.subtasks ?? []).map(subtask =>
+            subtask.id === patch.subtaskId ? { ...subtask, done: !subtask.done } : subtask
+          ),
+        }
+      );
+  }
+}
+
 export function useTasks(boardId: string | null) {
   const getToken = useAuthToken();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [serverTasks, setServerTasks] = useState<Task[]>([]);
+  const serverTasksRef = useRef<Task[]>([]);
+  serverTasksRef.current = serverTasks;
+
+  const [tasks, applyOptimistic] = useOptimistic(serverTasks, applyPatch);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Separate from `error` — transient failures that don't warrant replacing the board
@@ -42,7 +70,7 @@ export function useTasks(boardId: string | null) {
     try {
       const token = await getToken();
       const data = await getTasksByBoard(token, boardId);
-      setTasks(data.map(adaptBackendTask));
+      setServerTasks(data.map(adaptBackendTask));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
     } finally {
@@ -65,7 +93,7 @@ export function useTasks(boardId: string | null) {
         priority: fields.priority ?? 'med',
         ...fields,
       };
-      setTasks(prev => [...prev, tempTask]);
+      setServerTasks(prev => [...prev, tempTask]);
 
       try {
         const token = await getToken();
@@ -97,10 +125,10 @@ export function useTasks(boardId: string | null) {
         }
 
         // Replace the temp entry with the real task
-        setTasks(prev => prev.map(t => (t.id === tempId ? finalTask : t)));
+        setServerTasks(prev => prev.map(task => (task.id === tempId ? finalTask : task)));
         return finalTask;
       } catch (err) {
-        setTasks(prev => prev.filter(t => t.id !== tempId));
+        setServerTasks(prev => prev.filter(task => task.id !== tempId));
         setOpError(err instanceof Error ? err.message : 'Failed to create task');
       }
     },
@@ -111,10 +139,9 @@ export function useTasks(boardId: string | null) {
 
   const updateTask = useCallback(
     async (taskId: string, updates: Partial<Task>) => {
-      const previous = tasks;
-      setTasks(prev =>
-        prev.map(t => (t.id === taskId ? { ...t, ...updates } : t))
-      );
+      // Immediate optimistic display; capture server state for manual revert on error
+      applyOptimistic({ type: 'update', id: taskId, changes: updates });
+      const previousServer = serverTasksRef.current;
 
       try {
         const token = await getToken();
@@ -124,51 +151,50 @@ export function useTasks(boardId: string | null) {
           delete payload.assignees;
         }
         const updated = await apiUpdateTask(token, taskId, payload);
-        setTasks(prev =>
-          prev.map(t => (t.id === taskId ? adaptBackendTask(updated) : t))
-        );
-        return adaptBackendTask(updated);
+        const result = adaptBackendTask(updated);
+        setServerTasks(prev => prev.map(task => (task.id === taskId ? result : task)));
+        return result;
       } catch (err) {
-        setTasks(previous);
+        setServerTasks(previousServer);
         setOpError(err instanceof Error ? err.message : 'Failed to update task');
       }
     },
-    [getToken, tasks, setOpError]
+    [getToken, setOpError, applyOptimistic]
   );
 
   // ── Delete ───────────────────────────────────────────────────────────────────
 
   const deleteTask = useCallback(
-    async (taskId: string) => {
-      const previous = tasks;
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-
-      try {
-        const token = await getToken();
-        await apiDeleteTask(token, taskId);
-      } catch (err) {
-        setTasks(previous);
-        setOpError(err instanceof Error ? err.message : 'Failed to delete task');
-      }
+    (taskId: string) => {
+      startTransition(async () => {
+        applyOptimistic({ type: 'delete', id: taskId });
+        try {
+          const token = await getToken();
+          await apiDeleteTask(token, taskId);
+          setServerTasks(prev => prev.filter(task => task.id !== taskId));
+        } catch (err) {
+          setOpError(err instanceof Error ? err.message : 'Failed to delete task');
+          // startTransition auto-reverts the optimistic patch on error
+        }
+      });
     },
-    [getToken, tasks, setOpError]
+    [getToken, setOpError, applyOptimistic]
   );
 
   // ── Toggle subtask ───────────────────────────────────────────────────────────
 
   const toggleSubtask = useCallback(
-    async (taskId: string, subtaskId: string) => {
+    (taskId: string, subtaskId: string) => {
       // Task is still being created — real IDs aren't available yet
       if (taskId.startsWith('temp-') || subtaskId.startsWith('s')) {
-        // Still optimistically flip the local state so the UI feels responsive
-        setTasks(prev =>
-          prev.map(t =>
-            t.id !== taskId
-              ? t
+        setServerTasks(prev =>
+          prev.map(task =>
+            task.id !== taskId
+              ? task
               : {
-                  ...t,
-                  subtasks: (t.subtasks ?? []).map(s =>
-                    s.id === subtaskId ? { ...s, done: !s.done } : s
+                  ...task,
+                  subtasks: (task.subtasks ?? []).map(subtask =>
+                    subtask.id === subtaskId ? { ...subtask, done: !subtask.done } : subtask
                   ),
                 }
           )
@@ -176,38 +202,27 @@ export function useTasks(boardId: string | null) {
         return;
       }
 
-      const previous = tasks;
-      const task = tasks.find(t => t.id === taskId);
-      const subtask = task?.subtasks?.find(s => s.id === subtaskId);
-      if (!subtask) return;
+      startTransition(async () => {
+        const task = serverTasksRef.current.find(task => task.id === taskId);
+        const subtask = task?.subtasks?.find(subtask => subtask.id === subtaskId);
+        if (!subtask) return;
 
-      setTasks(prev =>
-        prev.map(t =>
-          t.id !== taskId
-            ? t
-            : {
-                ...t,
-                subtasks: (t.subtasks ?? []).map(s =>
-                  s.id === subtaskId ? { ...s, done: !s.done } : s
-                ),
-              }
-        )
-      );
-
-      try {
-        const token = await getToken();
-        const updated = await apiUpdateSubtask(token, taskId, subtaskId, {
-          done: !subtask.done,
-        });
-        setTasks(prev =>
-          prev.map(t => (t.id === taskId ? adaptBackendTask(updated) : t))
-        );
-      } catch (err) {
-        setTasks(previous);
-        setOpError(err instanceof Error ? err.message : 'Failed to toggle subtask');
-      }
+        applyOptimistic({ type: 'toggleSubtask', taskId, subtaskId });
+        try {
+          const token = await getToken();
+          const updated = await apiUpdateSubtask(token, taskId, subtaskId, {
+            done: !subtask.done,
+          });
+          setServerTasks(prev =>
+            prev.map(task => (task.id === taskId ? adaptBackendTask(updated) : task))
+          );
+        } catch (err) {
+          setOpError(err instanceof Error ? err.message : 'Failed to toggle subtask');
+          // startTransition auto-reverts the optimistic patch on error
+        }
+      });
     },
-    [getToken, tasks, setOpError]
+    [getToken, setOpError, applyOptimistic]
   );
 
   // ── Comments ─────────────────────────────────────────────────────────────────
@@ -217,8 +232,8 @@ export function useTasks(boardId: string | null) {
       try {
         const token = await getToken();
         const updated = await apiAddComment(token, taskId, { text, isAI });
-        setTasks(prev =>
-          prev.map(t => (t.id === taskId ? adaptBackendTask(updated) : t))
+        setServerTasks(prev =>
+          prev.map(task => (task.id === taskId ? adaptBackendTask(updated) : task))
         );
       } catch (err) {
         setOpError(err instanceof Error ? err.message : 'Failed to add comment');
@@ -232,8 +247,8 @@ export function useTasks(boardId: string | null) {
       try {
         const token = await getToken();
         const updated = await apiRemoveComment(token, taskId, commentId);
-        setTasks(prev =>
-          prev.map(t => (t.id === taskId ? adaptBackendTask(updated) : t))
+        setServerTasks(prev =>
+          prev.map(task => (task.id === taskId ? adaptBackendTask(updated) : task))
         );
       } catch (err) {
         setOpError(err instanceof Error ? err.message : 'Failed to remove comment');
