@@ -9,7 +9,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const BASE =
   'inline-flex items-center justify-center gap-[5px] font-ui font-medium cursor-pointer select-none ' +
-  'transition-colors duration-150 disabled:cursor-not-allowed ' +
+  'transition-[colors,transform,opacity] duration-150 active:scale-[0.97] active:opacity-90 ' +
+  'disabled:cursor-not-allowed disabled:active:scale-100 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate';
 
 const VARIANT_TONE: Record<string, Record<string, string>> = {
