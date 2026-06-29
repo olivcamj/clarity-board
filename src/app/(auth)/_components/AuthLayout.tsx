@@ -69,7 +69,7 @@ export function AuthLayout({
               </a>
             ))}
           </div>
-          <span>© 2026 ClarityBoard</span>
+          <span>© 2025-2026 ClarityBoard</span>
         </nav>
       </aside>
 
