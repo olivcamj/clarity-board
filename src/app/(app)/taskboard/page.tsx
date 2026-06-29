@@ -20,6 +20,17 @@ import { useAuthToken } from '../../lib/auth/useAuthToken';
 import { getTeamMembers, type TeamMember } from '../../lib/api/teams';
 import type { Task, Status } from '@/types/task';
 
+function currentWeekRange(): string {
+  const now = new Date();
+  const sun = new Date(now);
+  sun.setDate(now.getDate() - now.getDay());
+  const sat = new Date(sun);
+  sat.setDate(sun.getDate() + 6);
+  const formattedDate = (date: Date) =>
+    date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  return `${formattedDate(sun)} – ${formattedDate(sat)}`;
+}
+
 // ── Column metadata ────────────────────────────────────────────────────────────
 
 const COLUMN_META: Record<string, { dot: string; badge: string; status: Status }> = {
@@ -76,6 +87,7 @@ function TaskBoardInner() {
     fetchTasks,
     createTask,
     updateTask,
+    deleteTask,
     toggleSubtask,
   } = useTasks(boardId);
 
@@ -250,12 +262,13 @@ function TaskBoardInner() {
   return (
     <div className="flex flex-col min-h-screen" style={{ background: 'var(--paper)' }}>
       <BoardHeader
-        sprintCode="SPRINT 14 · APR 22 – MAY 5"
-        sprintLabel="Sprint 14, looking sharp"
+        sprintCode={currentWeekRange()}
+        sprintLabel="Sprint, looking sharp"
         boardName={currentBoard?.name ?? 'The Board'}
         subtitle={`${doneTasks} of ${tasks.length} done — you're on track.`}
         progress={progress}
         teamNames={teamNames}
+        hasTeammates={teamMembers.length > 1}
         onNewTask={() => setCreateColumnId('header')}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -341,7 +354,7 @@ function TaskBoardInner() {
           <DragOverlay>
             {activeId
               ? (() => {
-                  const activeTask = tasks.find(t => t.id === activeId);
+                  const activeTask = tasks.find(task => task.id === activeId);
                   return activeTask ? <TaskCard task={activeTask} /> : null;
                 })()
               : null}
@@ -357,6 +370,10 @@ function TaskBoardInner() {
           onClose={() => setSelectedTaskId(null)}
           onSave={async (updated) => {
             await updateTask(updated.id, updated);
+            setSelectedTaskId(null);
+          }}
+          onDelete={async () => {
+            await deleteTask(selectedTask.id);
             setSelectedTaskId(null);
           }}
           onToggleSubtask={(subtaskId) => toggleSubtask(selectedTask.id, subtaskId)}
