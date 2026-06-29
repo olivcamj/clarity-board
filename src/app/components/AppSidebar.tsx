@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useClerk } from '@clerk/nextjs';
+import { UserButton } from '@clerk/nextjs';
 import { Spark } from '../ui/Spark';
-import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { useWorkspace } from '../lib/WorkspaceContext';
 
@@ -83,8 +82,6 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const currentBoardId = searchParams.get('boardId');
   const { teams, boardsByTeam, user, workspaceName, loading } = useWorkspace();
-  const { signOut } = useClerk();
-  const router = useRouter();
   const allBoards = teams.flatMap(team => boardsByTeam[team.id] ?? []);
 
   return (
@@ -251,7 +248,10 @@ export function AppSidebar() {
           </>
         ) : (
           <>
-            <Avatar name={user.name || user.email} size={30} />
+            <UserButton
+              afterSignOutUrl="/sign-in"
+              appearance={{ elements: { avatarBox: 'w-[30px] h-[30px]' } }}
+            />
 
             <div className="flex-1 min-w-0">
               <p className="font-ui font-medium text-[13px] text-ink m-0 truncate leading-snug">
@@ -262,7 +262,6 @@ export function AppSidebar() {
               </p>
             </div>
 
-          <div className="flex items-center gap-[4px]">
             <Link
               href="/settings"
               aria-label="Settings"
@@ -270,16 +269,6 @@ export function AppSidebar() {
             >
               <Icon name="settings" size={15} />
             </Link>
-            <button
-              type="button"
-              title="Sign out"
-              aria-label="Sign out"
-              onClick={() => signOut(() => router.push('/sign-in'))}
-              className="shrink-0 flex items-center justify-center w-[28px] h-[28px] rounded-[6px] text-ash transition-colors duration-150 hover:bg-sand hover:text-ink active:bg-biscuit"
-            >
-              <Icon name="logout" size={15} />
-            </button>
-          </div>
           </>
         )}
       </div>
