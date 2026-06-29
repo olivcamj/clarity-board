@@ -54,6 +54,7 @@ export function useTasks(boardId: string | null) {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   // Separate from `error` — transient failures that don't warrant replacing the board
   const [operationError, setOperationError] = useState<string | null>(null);
 
@@ -61,7 +62,7 @@ export function useTasks(boardId: string | null) {
     setOperationError(msg);
   }, []);
 
-  // ── Fetch ────────────────────────────────────────────────────────────────────
+  //  Fetch
 
   const fetchTasks = useCallback(async () => {
     if (!boardId) return;
@@ -78,7 +79,7 @@ export function useTasks(boardId: string | null) {
     }
   }, [getToken, boardId]);
 
-  // ── Create ───────────────────────────────────────────────────────────────────
+  // Create
 
   const createTask = useCallback(
     async (fields: CreateTaskFields, status: Status = 'todo') => {
@@ -135,8 +136,7 @@ export function useTasks(boardId: string | null) {
     [getToken, boardId, setOpError]
   );
 
-  // ── Update ───────────────────────────────────────────────────────────────────
-
+  // Update 
   const updateTask = useCallback(
     async (taskId: string, updates: Partial<Task>) => {
       // Immediate optimistic display; capture server state for manual revert on error
@@ -162,12 +162,13 @@ export function useTasks(boardId: string | null) {
     [getToken, setOpError, applyOptimistic]
   );
 
-  // ── Delete ───────────────────────────────────────────────────────────────────
+  // Delete
 
   const deleteTask = useCallback(
     (taskId: string) => {
       startTransition(async () => {
         applyOptimistic({ type: 'delete', id: taskId });
+        
         try {
           const token = await getToken();
           await apiDeleteTask(token, taskId);
@@ -181,11 +182,11 @@ export function useTasks(boardId: string | null) {
     [getToken, setOpError, applyOptimistic]
   );
 
-  // ── Toggle subtask ───────────────────────────────────────────────────────────
-
+  //  Toggle subtask
+  
   const toggleSubtask = useCallback(
     (taskId: string, subtaskId: string) => {
-      // Task is still being created — real IDs aren't available yet
+      // Task is still being created --> real IDs aren't available yet
       if (taskId.startsWith('temp-') || subtaskId.startsWith('s')) {
         setServerTasks(prev =>
           prev.map(task =>
@@ -225,7 +226,7 @@ export function useTasks(boardId: string | null) {
     [getToken, setOpError, applyOptimistic]
   );
 
-  // ── Comments ─────────────────────────────────────────────────────────────────
+  //  Comments
 
   const addComment = useCallback(
     async (taskId: string, text: string, isAI = false) => {
