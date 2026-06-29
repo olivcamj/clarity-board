@@ -5,12 +5,13 @@ import { Button } from '../ui/Button';
 import { TopBar } from './TopBar';
 
 interface BoardHeaderProps {
-  sprintCode: string;    // "SPRINT 14 · APR 22 – MAY 5"
-  sprintLabel: string;   // "Sprint 14, looking sharp"
-  boardName: string;     // "The board"
-  subtitle: string;      // "3 of 8 done — you're on track."
+  sprintCode: string;
+  sprintLabel: string;
+  boardName: string;
+  subtitle: string;
   progress: number;      // 0–100
   teamNames: string[];
+  hasTeammates?: boolean;
   onNewTask: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -23,6 +24,7 @@ export function BoardHeader({
   subtitle,
   progress,
   teamNames,
+  hasTeammates = false,
   onNewTask,
   searchQuery,
   onSearchChange,
@@ -67,30 +69,19 @@ export function BoardHeader({
             <span className="font-mono text-[12px] text-ash">{progress}%</span>
           </div>
 
-          {/* Divider */}
-          <span aria-hidden="true" className="text-chalk text-[18px] font-light">|</span>
-
-          {/* Filter + Group */}
-          <div className="flex items-center gap-[4px]">
-            <Button type="button" variant="ghost" size="sm" aria-label="Filter tasks">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-              Filter
-            </Button>
-            <Button type="button" variant="ghost" size="sm" aria-label="Group tasks">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <line x1="21" y1="10" x2="3" y2="10" />
-                <line x1="21" y1="6"  x2="3" y2="6"  />
-                <line x1="21" y1="14" x2="3" y2="14" />
-                <line x1="21" y1="18" x2="3" y2="18" />
-              </svg>
-              Group
-            </Button>
-          </div>
-
-          {/* Divider */}
-          <span aria-hidden="true" className="text-chalk text-[18px] font-light">|</span>
+          {/* Filter (only when there are teammates to filter by) */}
+          {hasTeammates && (
+            <>
+              <span aria-hidden="true" className="text-chalk text-[18px] font-light">|</span>
+              <Button type="button" variant="ghost" size="sm" aria-label="Filter tasks">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                Filter
+              </Button>
+              <span aria-hidden="true" className="text-chalk text-[18px] font-light">|</span>
+            </>
+          )}
 
           {/* Team avatars */}
           {teamNames.length > 0 && (
