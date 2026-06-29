@@ -9,6 +9,7 @@ import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Icon } from '../ui/Icon';
 import { Spark } from '../ui/Spark';
 
@@ -32,6 +33,7 @@ export interface TaskModalProps {
     fields: Pick<Task, 'title' | 'description' | 'priority' | 'labels' | 'due' | 'sprint' | 'subtasks' | 'assignees'>,
     columnId: string
   ) => void;
+  onDelete?: () => void | Promise<void>;
   onToggleSubtask?: (subtaskId: string) => void;
 }
 
@@ -158,6 +160,7 @@ export function TaskModal({
   onClose,
   onSave,
   onCreate,
+  onDelete,
   onToggleSubtask,
 }: TaskModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -173,6 +176,15 @@ export function TaskModal({
   );
   const [addingSubtask, setAddingSubtask] = useState(false);
   const [newSubtaskText, setNewSubtaskText] = useState('');
+
+  // useEffect(() => {
+  //   if (mode === 'create') {
+  //     setTargetColumnId(columnId ?? columnOptions[0]?.id ?? '');
+  //   }
+  // }, [columnId, columnOptions, mode]);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const isEditing  = internalMode === 'edit';
   const isCreating = internalMode === 'create';
@@ -238,6 +250,14 @@ export function TaskModal({
   const handleCancelEdit = () => {
     setDraft(null);
     setInternalMode('view');
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    await onDelete?.();
+    setDeleteLoading(false);
+    setConfirmDeleteOpen(false);
+    onClose();
   };
 
   const handleCreateTask = () => {
@@ -614,14 +634,50 @@ export function TaskModal({
                     <Button type="button" variant="ghost" size="sm" onClick={handleStartEdit}>
                       Edit
                     </Button>
-                    <Button type="button" variant="ghost" size="sm" aria-label="More options" aria-haspopup="menu">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ash)" aria-hidden="true">
-                        <circle cx="12" cy="5" r="1.5" />
-                        <circle cx="12" cy="12" r="1.5" />
-                        <circle cx="12" cy="19" r="1.5" />
-                      </svg>
-                      More
-                    </Button>
+                    <div style={{ position: 'relative' }}>
+                      {moreMenuOpen && (
+                        <div
+                          style={{ position: 'fixed', inset: 0, zIndex: 52 }}
+                          onClick={() => setMoreMenuOpen(false)}
+                        />
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label="More options"
+                        aria-haspopup="menu"
+                        aria-expanded={moreMenuOpen}
+                        onClick={() => setMoreMenuOpen(isOpen => !isOpen)}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--ash)" aria-hidden="true">
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                        More
+                      </Button>
+                      {moreMenuOpen && (
+                        <div
+                          role="menu"
+                          style={{ position: 'absolute', top: '100%', left: 0, zIndex: 53, minWidth: 148 }}
+                          className="bg-paper border border-chalk rounded-[8px] shadow-[var(--shadow-3)] py-[4px] mt-[4px]"
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setMoreMenuOpen(false);
+                              setConfirmDeleteOpen(true);
+                            }}
+                            className="w-full text-left px-[12px] py-[8px] text-[13px] font-ui transition-colors duration-150 hover:bg-bone"
+                            style={{ color: 'var(--rose)' }}
+                          >
+                            Delete task
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close task">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -818,6 +874,16 @@ export function TaskModal({
           </aside>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete task"
+        message="This will permanently delete this task and all its subtasks. This cannot be undone."
+        confirmLabel="Delete task"
+        loading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </>
   );
 }
