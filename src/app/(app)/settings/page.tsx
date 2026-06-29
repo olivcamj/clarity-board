@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button';
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { Spark } from '../../ui/Spark';
 import { Toggle } from '../../ui/Toggle';
+import { useWorkspace } from '../../lib/WorkspaceContext';
 
 type SettingsSection = 'general' | 'members' | 'clarity-ai' | 'billing' | 'danger-zone';
 type DefaultView     = 'board' | 'table' | 'list';
@@ -90,7 +91,8 @@ const THEME_OPTIONS: Array<{ value: ColorTheme; label: string; icon?: ReactNode 
 ];
 
 function GeneralSettings() {
-  const [workspaceName,    setWorkspaceName]    = useState('Kiln Studio');
+  const { workspaceName, updateWorkspaceName, workspaceRole } = useWorkspace();
+  const isAdmin = workspaceRole === 'ADMIN';
   const [defaultView,      setDefaultView]      = useState<DefaultView>('board');
   const [colorTheme,       setColorTheme]       = useState<ColorTheme>('light');
   const [weeklyDigestOn,   setWeeklyDigestOn]   = useState(true);
@@ -100,9 +102,8 @@ function GeneralSettings() {
 
   const handleSaveWorkspaceName = () => {
     const trimmed = pendingName.trim();
-    if (!trimmed) return;
-    setWorkspaceName(trimmed);
-    setPendingName(trimmed);
+    if (!trimmed || !isAdmin) return;
+    updateWorkspaceName(trimmed);
   };
 
   return (
@@ -127,17 +128,26 @@ function GeneralSettings() {
             id="workspace-name"
             type="text"
             value={pendingName}
+            disabled={!isAdmin}
             onChange={e => setPendingName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSaveWorkspaceName(); }}
-            className="font-ui text-[13px] text-ink bg-paper border border-chalk rounded-[8px] px-[12px] py-[7px] outline-none w-[220px] transition-colors duration-150 focus:border-slate"
+            className={[
+              'font-ui text-[13px] text-ink bg-paper border border-chalk rounded-[8px] px-[12px] py-[7px] outline-none w-[220px] transition-colors duration-150',
+              isAdmin ? 'focus:border-slate' : 'opacity-50 cursor-not-allowed',
+            ].join(' ')}
             aria-describedby="workspace-name-hint"
           />
-          {nameIsDirty && (
+          {nameIsDirty && isAdmin && (
             <Button type="button" variant="solid" size="sm" onClick={handleSaveWorkspaceName}>
               Save
             </Button>
           )}
         </div>
+        {!isAdmin && (
+          <p className="font-ui text-[11px] text-ash mt-[6px] m-0">
+            Only workspace admins can rename the workspace.
+          </p>
+        )}
         <p id="workspace-name-hint" className="sr-only">Press Enter or click Save to apply.</p>
       </SettingsRow>
 
