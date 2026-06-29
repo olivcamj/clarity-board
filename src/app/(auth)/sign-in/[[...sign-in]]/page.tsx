@@ -48,7 +48,7 @@ export default function SignInPage() {
   return (
     <AuthLayout
       eyebrow="Welcome back"
-      heading={<>Pick up<span className="italic text-ash"> right where you </span>left it.</>}
+      heading={<>Pick up<span className="italic text-ash"> right where you </span>left off.</>}
       description={<>Your team made 23 moves while you were away.<br />Three are flagged for your attention.</>}
       card={<SignInCard />}
       activeTab="sign-in"
