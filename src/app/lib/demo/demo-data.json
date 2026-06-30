@@ -1,0 +1,241 @@
+{
+  "_meta": {
+    "description": "Canonical demo dataset for ClarityBoard. Single source of truth for a seeded demo workspace so hiring managers and prospective coworkers can log in and explore a realistic, fully-populated account.",
+    "appName": "ClarityBoard",
+    "version": "2.4.1",
+    "seededDate": "2026-05-24",
+    "notes": "All people share the kiln.dev domain. Board/task/activity references use person ids (u1..u6). Color values are design-token names from tokens.css."
+  },
+
+  "company": {
+    "name": "Kiln Studio",
+    "initials": "KS",
+    "domain": "kiln.dev",
+    "avatarColor": "var(--slate)",
+    "memberCount": 6,
+    "boardCount": 6,
+    "plan": {
+      "tier": "Team",
+      "pricePerSeat": 12,
+      "currency": "USD",
+      "seats": 6,
+      "monthlyTotal": 72,
+      "paymentMethod": { "brand": "Visa", "last4": "4242", "expires": "09/27" },
+      "invoiceEmail": "billing@kiln.dev"
+    },
+    "aiCredits": { "used": 487, "total": 1000, "resetsOn": "2026-05-01" }
+  },
+
+  "currentUser": {
+    "id": "u1",
+    "name": "Mira Cho",
+    "email": "mira.cho@kiln.dev",
+    "role": "Design lead",
+    "title": "Design lead",
+    "initials": "MC",
+    "workspaceRole": "Owner"
+  },
+
+  "members": [
+    {
+      "id": "u1", "name": "Mira Cho", "email": "mira.cho@kiln.dev",
+      "role": "Design lead", "team": "Design", "workspaceRole": "Owner",
+      "initials": "MC", "openTasks": 5, "shippedTasks": 34,
+      "boards": ["launch", "design", "brand"]
+    },
+    {
+      "id": "u2", "name": "Alex Reyes", "email": "alex.reyes@kiln.dev",
+      "role": "Eng", "team": "Engineering", "workspaceRole": "Admin",
+      "initials": "AR", "openTasks": 4, "shippedTasks": 28,
+      "boards": ["launch", "growth", "infra"]
+    },
+    {
+      "id": "u3", "name": "Jules Park", "email": "jules.park@kiln.dev",
+      "role": "Eng", "team": "Engineering", "workspaceRole": "Member",
+      "initials": "JP", "openTasks": 6, "shippedTasks": 22,
+      "boards": ["launch", "mobile"]
+    },
+    {
+      "id": "u4", "name": "Noor Patel", "email": "noor.patel@kiln.dev",
+      "role": "PM", "team": "Product", "workspaceRole": "Admin",
+      "initials": "NP", "openTasks": 3, "shippedTasks": 19,
+      "boards": ["launch", "growth", "brand"]
+    },
+    {
+      "id": "u5", "name": "Sam Ito", "email": "sam.ito@kiln.dev",
+      "role": "QA", "team": "Quality", "workspaceRole": "Member",
+      "initials": "SI", "openTasks": 4, "shippedTasks": 15,
+      "boards": ["growth", "mobile"]
+    },
+    {
+      "id": "u6", "name": "Devon Lee", "email": "devon.lee@kiln.dev",
+      "role": "Eng", "team": "Engineering", "workspaceRole": "Member",
+      "initials": "DL", "openTasks": 5, "shippedTasks": 26,
+      "boards": ["design", "mobile", "infra"]
+    }
+  ],
+
+  "boards": [
+    {
+      "id": "launch", "name": "Launch v2.0", "color": "var(--ember)",
+      "tagline": "Ship Clarity AI and the v2 brand.",
+      "myRole": "Owner", "health": "on-track", "pinned": true, "updated": "12m ago",
+      "sprint": "Sprint 14", "active": 9, "done": 14, "total": 28,
+      "memberIds": ["u1", "u2", "u3", "u4"]
+    },
+    {
+      "id": "design", "name": "Design System", "color": "var(--slate)",
+      "tagline": "Tokens, atoms, and the long road to parity.",
+      "myRole": "Owner", "health": "on-track", "pinned": true, "updated": "2h ago",
+      "sprint": "Continuous", "active": 4, "done": 21, "total": 32,
+      "memberIds": ["u1", "u6"]
+    },
+    {
+      "id": "growth", "name": "Growth Experiments", "color": "var(--sage)",
+      "tagline": "Three bets a month, kill what doesn't move.",
+      "myRole": "Editor", "health": "attention", "pinned": false, "updated": "yesterday",
+      "sprint": "Cycle 3", "active": 6, "done": 4, "total": 12,
+      "memberIds": ["u4", "u5", "u2"]
+    },
+    {
+      "id": "mobile", "name": "Mobile App", "color": "var(--plum)",
+      "tagline": "iOS first, Android tracks behind by two weeks.",
+      "myRole": "Editor", "health": "slipping", "pinned": false, "updated": "3d ago",
+      "sprint": "Sprint 7", "active": 11, "done": 5, "total": 19,
+      "memberIds": ["u3", "u5", "u6"]
+    },
+    {
+      "id": "infra", "name": "Infra & Reliability", "color": "var(--ochre)",
+      "tagline": "Quietly making everything else possible.",
+      "myRole": "Viewer", "health": "on-track", "pinned": false, "updated": "4h ago",
+      "sprint": "Sprint 14", "active": 3, "done": 8, "total": 13,
+      "memberIds": ["u2", "u6"]
+    },
+    {
+      "id": "brand", "name": "Brand & Marketing", "color": "var(--rose)",
+      "tagline": "Site, social, and the launch announcement.",
+      "myRole": "Editor", "health": "on-track", "pinned": false, "updated": "1d ago",
+      "sprint": "May plan", "active": 2, "done": 6, "total": 9,
+      "memberIds": ["u1", "u4"]
+    }
+  ],
+
+  "tasks": [
+    {
+      "id": "CB-142", "title": "Design onboarding empty state",
+      "description": "When a user lands on an empty board, show a lightweight guide. Must feel calm, not pushy.",
+      "board": "launch", "status": "todo", "priority": "med", "due": "2026-04-29", "sprint": "Sprint 14",
+      "labels": ["design"], "assignees": ["u1"],
+      "subtasks": [
+        { "id": "s1", "text": "Audit competitors", "done": true },
+        { "id": "s2", "text": "Sketch 3 variants", "done": false },
+        { "id": "s3", "text": "Review with Noor", "done": false }
+      ],
+      "attachments": [{ "kind": "link", "label": "Miro board", "href": "#" }],
+      "comments": 4, "activity": 12
+    },
+    {
+      "id": "CB-138", "title": "Set up Postgres replica in EU",
+      "description": "Second read replica in eu-west-1 to serve EU customers locally.",
+      "board": "infra", "status": "todo", "priority": "high", "due": "2026-05-03", "sprint": "Sprint 14",
+      "labels": ["infra", "backend"], "assignees": ["u2", "u6"],
+      "subtasks": [
+        { "id": "s1", "text": "Pick hosting region", "done": false },
+        { "id": "s2", "text": "Set up replication", "done": false }
+      ],
+      "comments": 2, "activity": 6
+    },
+    {
+      "id": "CB-155", "title": "Write launch blog post",
+      "description": "Announce v2.0 — keep tone quiet, engineer-flavoured.",
+      "board": "brand", "status": "todo", "priority": "low", "due": "2026-05-10",
+      "labels": ["research"], "assignees": ["u4"],
+      "subtasks": [], "comments": 0, "activity": 1
+    },
+    {
+      "id": "CB-129", "title": "Build auth module with OAuth2",
+      "description": "Support Google and GitHub; magic link is optional.",
+      "board": "launch", "status": "doing", "priority": "high", "due": "2026-04-26", "sprint": "Sprint 14",
+      "labels": ["backend", "frontend"], "assignees": ["u2", "u3", "u1"],
+      "subtasks": [
+        { "id": "s1", "text": "Create API endpoints for authentication", "done": true },
+        { "id": "s2", "text": "Test OAuth2 integration end-to-end", "done": false },
+        { "id": "s3", "text": "Write refresh token logic", "done": false }
+      ],
+      "attachments": [{ "kind": "file", "label": "spec.pdf" }],
+      "comments": 12, "activity": 34
+    },
+    {
+      "id": "CB-133", "title": "Refactor board drag interactions",
+      "description": "Current drag feels laggy on long lists. Move to transform-based positioning.",
+      "board": "launch", "status": "doing", "priority": "med", "due": "2026-04-28",
+      "labels": ["frontend"], "assignees": ["u3"],
+      "subtasks": [
+        { "id": "s1", "text": "Profile current implementation", "done": true },
+        { "id": "s2", "text": "Prototype with framer", "done": false }
+      ],
+      "comments": 5, "activity": 14
+    },
+    {
+      "id": "CB-120", "title": "Finalize logo and brand mark",
+      "description": "Pick between the two remaining wordmarks.",
+      "board": "brand", "status": "done", "priority": "med", "due": "2026-04-20",
+      "labels": ["design"], "assignees": ["u1", "u4"],
+      "subtasks": [
+        { "id": "s1", "text": "Review with founders", "done": true },
+        { "id": "s2", "text": "Export to brand kit", "done": true }
+      ],
+      "comments": 7, "activity": 22
+    },
+    {
+      "id": "CB-118", "title": "Ship public API docs site",
+      "description": "",
+      "board": "launch", "status": "done", "priority": "med", "due": "2026-04-18",
+      "labels": ["backend", "frontend"], "assignees": ["u2", "u3"],
+      "subtasks": [], "comments": 3, "activity": 9
+    },
+    {
+      "id": "CB-112", "title": "QA pass on billing flow",
+      "description": "",
+      "board": "launch", "status": "done", "priority": "high", "due": "2026-04-15",
+      "labels": ["frontend"], "assignees": ["u5"],
+      "subtasks": [], "comments": 2, "activity": 5
+    },
+    {
+      "id": "CB-156", "title": "Refund UI broke on small screens",
+      "description": "Billing — refund UI broke on small screens.",
+      "board": "mobile", "status": "todo", "priority": "high", "due": "2026-06-27",
+      "labels": ["bug", "frontend"], "assignees": ["u1"],
+      "subtasks": [], "comments": 0, "activity": 0
+    },
+    {
+      "id": "CB-201", "title": "Audit token usage on dark backgrounds",
+      "description": "Several plum and ochre label combos fail WCAG AA. Needs a pass.",
+      "board": "design", "status": "todo", "priority": "med", "due": "2026-07-01",
+      "labels": ["design"], "assignees": ["u1", "u6"],
+      "subtasks": [
+        { "id": "s1", "text": "Run Stark plugin audit", "done": false },
+        { "id": "s2", "text": "Update token values", "done": false }
+      ],
+      "comments": 1, "activity": 3
+    },
+    {
+      "id": "CB-088", "title": "Onboarding checklist component",
+      "description": "Reusable checklist that tracks first-run steps for new workspace members.",
+      "board": "launch", "status": "review", "priority": "med", "due": "2026-06-28",
+      "labels": ["frontend", "design"], "assignees": ["u1", "u3"],
+      "subtasks": [
+        { "id": "s1", "text": "Component scaffolding", "done": true },
+        { "id": "s2", "text": "Animation pass", "done": true },
+        { "id": "s3", "text": "Accessibility review", "done": false }
+      ],
+      "comments": 3, "activity": 8
+    }
+  ],
+
+  "dashboardStats": {
+    "dueToday": 3,
+    "overdue": 2,
+    "inFlight": 14
+  }
+}
