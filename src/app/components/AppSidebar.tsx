@@ -249,7 +249,6 @@ export function AppSidebar() {
         ) : (
           <>
             <UserButton
-              afterSignOutUrl="/sign-in"
               appearance={{ elements: { avatarBox: 'w-[30px] h-[30px]' } }}
             />
 

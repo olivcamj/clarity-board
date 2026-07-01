@@ -1,9 +1,13 @@
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Link from "next/link";
 import { Button } from "../ui/Button";
 import { SectionHero } from "../components/SectionHero";
 
-// TODO : user context signin or not determines what is displayed
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth();
+  if (userId) redirect('/dashboard');
+
   return (
     <div className="font-sans min-h-screen">
       <main className="page-section flex flex-col gap-8 items-center sm:items-start">

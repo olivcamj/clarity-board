@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import { SignIn } from '@clerk/nextjs';
 import { Icon } from '../../../ui/Icon';
 import { Avatar } from '../../../ui/Avatar';
 import { AuthLayout } from '../../_components/AuthLayout';
 import { clerkAppearance } from '../../_clerk-appearance';
+import { SignInGuard } from './SignInGuard';
 
 function SignInCard() {
   return (
@@ -46,16 +48,20 @@ function SignInCard() {
 
 export default function SignInPage() {
   return (
-    <AuthLayout
-      eyebrow="Welcome back"
-      heading={<>Pick up<span className="italic text-ash"> right where you </span>left off.</>}
-      description={<>Your team made 23 moves while you were away.<br />Three are flagged for your attention.</>}
-      card={<SignInCard />}
-      activeTab="sign-in"
-      formHeading="Sign in."
-      formSubtitle="Welcome back. Take it slow."
-    >
-      <SignIn routing="path" path="/sign-in" appearance={clerkAppearance} />
-    </AuthLayout>
+    <Suspense>
+      <SignInGuard>
+        <AuthLayout
+          eyebrow="Welcome back"
+          heading={<>Pick up<span className="italic text-ash"> right where you </span>left off.</>}
+          description={<>Your team made 23 moves while you were away.<br />Three are flagged for your attention.</>}
+          card={<SignInCard />}
+          activeTab="sign-in"
+          formHeading="Sign in."
+          formSubtitle="Welcome back. Take it slow."
+        >
+          <SignIn routing="path" path="/sign-in" appearance={clerkAppearance} />
+        </AuthLayout>
+      </SignInGuard>
+    </Suspense>
   );
 }
