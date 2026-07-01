@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TeamService } from './team.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { WorkspaceService } from '../workspace/workspace.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { MemberRole } from '../../generated/client';
 
@@ -64,11 +65,16 @@ describe('TeamService', () => {
     },
   };
 
+  const mockWorkspaceService = {
+    getMyWorkspaces: jest.fn().mockResolvedValue([{ id: 'workspace-1', name: 'My Workspace', role: MemberRole.ADMIN }]),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TeamService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: WorkspaceService, useValue: mockWorkspaceService },
       ],
     }).compile();
 
@@ -84,8 +90,9 @@ describe('TeamService', () => {
 
       expect(result.id).toBe('team-1');
       expect(result.name).toBe('Alpha Team');
+      expect(mockWorkspaceService.getMyWorkspaces).toHaveBeenCalledWith('user-1');
       expect(mockPrismaService.team.create).toHaveBeenCalledWith({
-        data: { name: 'Alpha Team' },
+        data: { name: 'Alpha Team', workspaceId: 'workspace-1' },
       });
       expect(mockPrismaService.teamMembership.create).toHaveBeenCalledWith({
         data: { teamId: 'team-1', userId: 'user-1', role: MemberRole.ADMIN },

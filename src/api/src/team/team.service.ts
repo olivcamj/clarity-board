@@ -7,10 +7,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { MemberRole } from '../../generated/client';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { TeamResponseDto } from './dto/team-response.dto';
+import { WorkspaceService } from '../workspace/workspace.service';
 
 @Injectable()
 export class TeamService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workspaceService: WorkspaceService,
+  ) {}
 
   async createTeam(
     createTeamDto: CreateTeamDto,
@@ -18,7 +22,10 @@ export class TeamService {
   ): Promise<TeamResponseDto> {
     const { name } = createTeamDto;
 
-    const team = await this.prisma.team.create({ data: { name } });
+    const [workspace] = await this.workspaceService.getMyWorkspaces(creatorId);
+    const team = await this.prisma.team.create({
+      data: { name, workspaceId: workspace.id },
+    });
 
     // Creator becomes ADMIN of the new team
     await this.prisma.teamMembership.create({
