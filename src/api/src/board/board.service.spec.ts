@@ -161,5 +161,16 @@ describe('BoardService', () => {
       mockPrismaService.board.findUnique.mockResolvedValueOnce(null);
       await expect(service.remove('bad-id')).rejects.toThrow(NotFoundException);
     });
+
+    it('should delete a board that still has tasks (cascade handled by the DB)', async () => {
+      mockPrismaService.board.findUnique.mockResolvedValueOnce(mockBoardWithTasks);
+
+      const result = await service.remove('board-1');
+
+      expect(result).toEqual({ message: 'Board deleted successfully' });
+      expect(mockPrismaService.board.delete).toHaveBeenCalledWith({
+        where: { id: 'board-1' },
+      });
+    });
   });
 });
