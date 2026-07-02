@@ -21,6 +21,13 @@ export type CreateTaskFields = Pick<
   'title' | 'description' | 'priority' | 'labels' | 'due' | 'sprint' | 'subtasks'
 > & { status?: Status };
 
+// Fields the backend's UpdateTaskDto whitelists — anything else (id, createdAt,
+// createdBy, ai, subtasks, attachments, comments, conversation, ...) gets
+// rejected with a 400 if sent, since the API uses forbidNonWhitelisted.
+const UPDATABLE_TASK_FIELDS = [
+  'title', 'description', 'status', 'priority', 'labels', 'due', 'sprint', 'assignees', 'source',
+] as const satisfies readonly (keyof Task)[];
+
 type OptimisticPatch =
   | { type: 'update'; id: string; changes: Partial<Task> }
   | { type: 'delete'; id: string }
@@ -104,8 +111,8 @@ export function useTasks(boardId: string | null) {
         const created = await apiCreateTask(token, boardId, {
           title:       rest.title,
           description: rest.description,
-          status:      status.toUpperCase() as 'TODO' | 'DOING' | 'REVIEW' | 'DONE',
-          priority:    (rest.priority ?? 'med').toUpperCase() as 'HIGH' | 'MED' | 'LOW',
+          status,
+          priority:    rest.priority ?? 'med',
           labels:      rest.labels,
           due:         rest.due,
           sprint:      rest.sprint,
@@ -136,28 +143,40 @@ export function useTasks(boardId: string | null) {
     [getToken, boardId, setOpError]
   );
 
-  // Update 
+  // Update
   const updateTask = useCallback(
-    async (taskId: string, updates: Partial<Task>) => {
-      // Immediate optimistic display; capture server state for manual revert on error
-      applyOptimistic({ type: 'update', id: taskId, changes: updates });
+    (taskId: string, updates: Partial<Task>) => {
       const previousServer = serverTasksRef.current;
+      // Dispatch and the network call must share one transition — a transition
+      // only keeps the optimistic value visible while it's pending, and a
+      // synchronous callback is "done" the instant it returns. Splitting the
+      // dispatch into its own transition let React discard the optimistic
+      // patch before the request resolved, snapping the card back to its old
+      // column and then jumping again once the real response landed.
+      startTransition(async () => {
+        applyOptimistic({ type: 'update', id: taskId, changes: updates });
 
-      try {
-        const token = await getToken();
-        const payload: Record<string, unknown> = { ...updates };
-        if (Array.isArray(payload.assignees)) {
-          payload.assigneeIds = payload.assignees;
-          delete payload.assignees;
+        try {
+          const token = await getToken();
+          // Only forward fields the backend's UpdateTaskDto actually accepts —
+          // callers (e.g. the edit modal) pass a full Task, and its whitelist
+          // validation 400s on any extra property (id, createdAt, subtasks, ...).
+          const payload: Record<string, unknown> = {};
+          for (const key of UPDATABLE_TASK_FIELDS) {
+            if (key in updates) payload[key] = updates[key];
+          }
+          if (Array.isArray(payload.assignees)) {
+            payload.assigneeIds = payload.assignees;
+            delete payload.assignees;
+          }
+          const updated = await apiUpdateTask(token, taskId, payload);
+          const result = adaptBackendTask(updated);
+          setServerTasks(prev => prev.map(task => (task.id === taskId ? result : task)));
+        } catch (err) {
+          setServerTasks(previousServer);
+          setOpError(err instanceof Error ? err.message : 'Failed to update task');
         }
-        const updated = await apiUpdateTask(token, taskId, payload);
-        const result = adaptBackendTask(updated);
-        setServerTasks(prev => prev.map(task => (task.id === taskId ? result : task)));
-        return result;
-      } catch (err) {
-        setServerTasks(previousServer);
-        setOpError(err instanceof Error ? err.message : 'Failed to update task');
-      }
+      });
     },
     [getToken, setOpError, applyOptimistic]
   );
