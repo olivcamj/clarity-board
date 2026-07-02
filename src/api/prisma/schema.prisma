@@ -123,7 +123,7 @@ model Task {
   updatedAt   DateTime      @updatedAt
   createdById String
   assignees   User[]        @relation("TaskAssignees")
-  board       Board         @relation(fields: [boardId], references: [id])
+  board       Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
   createdBy   User          @relation("CreatedTasks", fields: [createdById], references: [id])
   subtasks    Subtask[]
   comments    TaskComment[]
