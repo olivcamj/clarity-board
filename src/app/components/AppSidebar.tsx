@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { UserButton } from '@clerk/nextjs';
 import { Spark } from '../ui/Spark';
 import { Icon } from '../ui/Icon';
+import { Button } from '../ui/Button';
 import { useWorkspace } from '../lib/WorkspaceContext';
 
 // VIEW_NAV_ITEMS hidden until post-MVP (Table, List, Timeline not yet implemented)
@@ -77,7 +78,13 @@ function NavItem({
 
 const SUGGESTIONS_PENDING: number = 3;
 
-export function AppSidebar() {
+export function AppSidebar({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentBoardId = searchParams.get('boardId');
@@ -87,19 +94,33 @@ export function AppSidebar() {
   return (
     <aside
       aria-label="App navigation"
-      className="w-[260px] shrink-0 h-screen overflow-hidden flex flex-col border-r border-chalk"
+      className={[
+        'shrink-0 h-screen overflow-hidden flex flex-col border-r border-chalk',
+        'transition-[width,opacity] duration-200 ease-in-out',
+        isOpen ? 'w-[260px] opacity-100' : 'w-0 opacity-0 border-r-0 pointer-events-none',
+      ].join(' ')}
       style={{ background: 'var(--bone)' }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-[8px] px-[16px] pt-[18px] pb-[14px]">
-        <div
-          className="flex items-center justify-center rounded-[6px] shrink-0"
-          style={{ width: 24, height: 24, background: 'var(--ember)', color: '#fff' }}
-          aria-hidden="true"
-        >
-          <Spark size={13} color="#fff" />
+      <div className="flex items-center justify-between gap-[8px] px-[16px] pt-[18px] pb-[14px]">
+        <div className="flex items-center gap-[8px] min-w-0">
+          <div
+            className="flex items-center justify-center rounded-[6px] shrink-0"
+            style={{ width: 24, height: 24, background: 'var(--ember)', color: '#fff' }}
+            aria-hidden="true"
+          >
+            <Spark size={13} color="#fff" />
+          </div>
+          <span className="font-display text-[16px] text-ink leading-none truncate">ClarityBoard</span>
         </div>
-        <span className="font-display text-[16px] text-ink leading-none">ClarityBoard</span>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Collapse sidebar"
+          onClick={onClose}
+        >
+          <Icon name="panel-left" size={15} />
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto flex flex-col px-[10px]" style={{ gap: 0 }}>
