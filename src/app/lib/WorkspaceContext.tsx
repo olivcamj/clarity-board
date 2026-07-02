@@ -43,7 +43,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [boardsByTeam, setBoardsByTeam] = useState<Record<string, Board[]>>({});
-  const [boardsLoading, setBoardsLoading] = useState(false);
+  // Starts true so there's no gap frame between userLoading flipping off
+  // and this effect kicking in — otherwise the dashboard briefly renders
+  // with stale/empty boards before the skeleton reappears.
+  const [boardsLoading, setBoardsLoading] = useState(true);
 
   const teams = useMemo(() => userData?.teams ?? [], [userData?.teams]);
 
@@ -65,8 +68,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Fetch boards whenever teams change
   useEffect(() => {
+    if (userLoading) return;
+
     if (!teams.length) {
       setBoardsByTeam({});
+      setBoardsLoading(false);
       return;
     }
 
@@ -96,7 +102,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [teams, getToken]);
+  }, [userLoading, teams, getToken]);
 
   // Index workspaces by id for O(1) lookup
   const workspacesById = useMemo(
