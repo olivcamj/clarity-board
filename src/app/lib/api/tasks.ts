@@ -59,8 +59,8 @@ export type BackendPriority = 'HIGH' | 'MED' | 'LOW';
 export interface CreateTaskPayload {
   title: string;
   description?: string;
-  status?: BackendTaskStatus;
-  priority?: BackendPriority;
+  status?: Status;
+  priority?: Priority;
   labels?: string[];
   due?: string;
   sprint?: string;
@@ -71,6 +71,12 @@ export interface CreateTaskPayload {
 }
 
 export type UpdateTaskPayload = Partial<CreateTaskPayload>;
+
+// Wire shape actually sent to the backend — status/priority converted to Prisma enums
+type BackendTaskBody = Omit<CreateTaskPayload, 'status' | 'priority'> & {
+  status?: BackendTaskStatus;
+  priority?: BackendPriority;
+};
 
 export interface CreateSubtaskPayload {
   text: string;
@@ -162,7 +168,7 @@ export function createTask(
   boardId: string,
   payload: CreateTaskPayload,
 ): Promise<BackendTask> {
-  const body: CreateTaskPayload = {
+  const body: BackendTaskBody = {
     ...payload,
     status:   payload.status   ? toBackendStatus(payload.status)   : undefined,
     priority: payload.priority ? toBackendPriority(payload.priority) : undefined,
@@ -184,7 +190,7 @@ export function updateTask(
   taskId: string,
   payload: UpdateTaskPayload,
 ): Promise<BackendTask> {
-  const body: UpdateTaskPayload = {
+  const body: Partial<BackendTaskBody> = {
     ...payload,
     status:   payload.status   ? toBackendStatus(payload.status)   : undefined,
     priority: payload.priority ? toBackendPriority(payload.priority) : undefined,
