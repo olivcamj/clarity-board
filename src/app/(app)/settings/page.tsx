@@ -7,10 +7,10 @@ import { SegmentedControl } from '../../ui/SegmentedControl';
 import { Spark } from '../../ui/Spark';
 import { Toggle } from '../../ui/Toggle';
 import { useWorkspace } from '../../lib/WorkspaceContext';
+import { useTheme, type ColorTheme } from '../../lib/ThemeContext';
 
 type SettingsSection = 'general' | 'members' | 'clarity-ai' | 'billing' | 'danger-zone';
 type DefaultView     = 'board' | 'table' | 'list';
-type ColorTheme      = 'light' | 'dark' | 'auto';
 
 const SETTINGS_SECTIONS: Array<{ id: SettingsSection; label: string; danger?: true }> = [
   { id: 'general',     label: 'General'     },
