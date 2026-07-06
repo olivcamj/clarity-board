@@ -197,9 +197,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
       <TopBar title="Home" showHomeIcon searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-      <div className="px-[40px] py-[40px]">
+      <div className="px-[16px] py-[24px] md:px-[40px] md:py-[40px]">
         {/* Page header */}
-        <div className="flex items-start justify-between mb-[24px]">
+        <div className="flex flex-col gap-[16px] items-start mb-[24px] md:flex-row md:items-start md:justify-between">
           <div>
             <p className="font-mono text-[10px] text-ash tracking-[0.1em] uppercase mb-[6px]">
               {dateLine()}
@@ -213,7 +213,7 @@ export default function DashboardPage() {
 
         <StatCards dueToday={stats.dueToday} overdue={stats.overdue} inFlight={stats.inFlight} />
 
-        <div className="grid gap-[32px]" style={{ gridTemplateColumns: '1fr 360px' }}>
+        <div className="grid grid-cols-1 gap-[24px] md:grid-cols-[1fr_360px] md:gap-[32px]">
           <MyTasksList tasks={myTasks} onComplete={handleComplete} searchQuery={searchQuery} />
           <div>
             <ClaritySuggestions />
