@@ -25,9 +25,9 @@ const VARIANT_TONE: Record<string, Record<string, string>> = {
     rose:    'border border-rose text-rose bg-transparent hover:bg-rose-soft',
   },
   ghost: {
-    primary: 'text-ash bg-transparent hover:bg-sand',
-    ember:   'text-ember bg-transparent hover:bg-ember-soft',
-    rose:    'text-rose bg-transparent hover:bg-rose-soft',
+    primary: 'border border-transparent text-ash bg-transparent hover:bg-sand',
+    ember:   'border border-transparent text-ember bg-transparent hover:bg-ember-soft',
+    rose:    'border border-transparent text-rose bg-transparent hover:bg-rose-soft',
   },
 };
 

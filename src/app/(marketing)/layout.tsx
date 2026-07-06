@@ -30,7 +30,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       {children}
-      <footer className="w-full flex flex-row items-start gap-4 px-6 py-8 justify-between sm:flex-col sm:items-center sm:gap-8 sm:px-10 text-sm text-ash">
+      <footer className="w-full flex flex-col items-center gap-8 px-6 py-8 sm:flex-row sm:items-start sm:gap-4 sm:justify-between sm:px-10 text-sm text-ash">
         <Link href="/" className="flex items-center gap-2 hover:underline hover:underline-offset-4">
           <Image aria-hidden src="/file.svg" alt="ClarityBoard Logo" width={16} height={16} />
         </Link>
