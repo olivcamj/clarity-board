@@ -49,6 +49,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [boardsLoading, setBoardsLoading] = useState(true);
 
   const teams = useMemo(() => userData?.teams ?? [], [userData?.teams]);
+  // userData is a new object on every refetch, so `teams` gets a new array
+  // reference even when the team list is unchanged — key the boards effect
+  // off team ids instead, or a background refetch (e.g. after completing a
+  // task) would re-fetch every board on every team unnecessarily.
+  const teamsKey = teams.map(team => team.id).join(',');
 
   // Fetch workspaces once after the user has loaded
   useEffect(() => {
@@ -102,7 +107,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [userLoading, teams, getToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userLoading, teamsKey, getToken]);
 
   // Index workspaces by id for O(1) lookup
   const workspacesById = useMemo(
