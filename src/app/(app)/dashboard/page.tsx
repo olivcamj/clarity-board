@@ -178,7 +178,10 @@ export default function DashboardPage() {
     });
   }
 
-  if (loading) return <DashboardSkeleton />;
+  // Only block on the full-page skeleton for the true first load — background
+  // refetches (mount-effect staleness refresh, post-complete refresh) should
+  // update in place, not flash the whole page back to a loading state.
+  if (loading && !user) return <DashboardSkeleton />;
 
   if (error) {
     return (
