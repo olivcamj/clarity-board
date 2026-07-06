@@ -310,6 +310,7 @@ export function AppSidebar({
           </>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
