@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { SegmentedControl } from '../../ui/SegmentedControl';
-import { Spark } from '../../ui/Spark';
 import { Toggle } from '../../ui/Toggle';
+import { TopBar } from '../../components/TopBar';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { useTheme, type ColorTheme } from '../../lib/ThemeContext';
 
@@ -68,26 +69,9 @@ const DEFAULT_VIEW_OPTIONS: Array<{ value: DefaultView; label: string }> = [
 ];
 
 const THEME_OPTIONS: Array<{ value: ColorTheme; label: string; icon?: ReactNode }> = [
-  {
-    value: 'light',
-    label: 'Light',
-    icon: (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-      </svg>
-    ),
-  },
-  {
-    value: 'dark',
-    label: 'Dark',
-    icon: (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-      </svg>
-    ),
-  },
-  { value: 'auto', label: 'Auto' },
+  { value: 'light', label: 'Light', icon: <Icon name="sun" size={13} /> },
+  { value: 'dark',  label: 'Dark',  icon: <Icon name="moon" size={13} /> },
+  { value: 'auto',  label: 'Auto' },
 ];
 
 function GeneralSettings() {
@@ -151,17 +135,17 @@ function GeneralSettings() {
         <p id="workspace-name-hint" className="sr-only">Press Enter or click Save to apply.</p>
       </SettingsRow>
 
-      <SettingsRow
+      {/* <SettingsRow
         label="Default view"
         description="What members see when they open the workspace."
       >
         <SegmentedControl
           options={DEFAULT_VIEW_OPTIONS}
           value={defaultView}
-          onChange={v => setDefaultView(v)}
+          onChange={updateView => setDefaultView(updateView)}
           groupLabel="Default view"
         />
-      </SettingsRow>
+      </SettingsRow> */}
 
       <SettingsRow
         label="Theme"
@@ -175,7 +159,7 @@ function GeneralSettings() {
         />
       </SettingsRow>
 
-      <SettingsRow
+      {/* <SettingsRow
         label="Weekly digest"
         description="Every Monday at 9am, a short note on what shipped."
       >
@@ -184,7 +168,7 @@ function GeneralSettings() {
           onChange={setWeeklyDigestOn}
           label="Weekly digest emails"
         />
-      </SettingsRow>
+      </SettingsRow> */}
     </section>
   );
 }
@@ -210,45 +194,12 @@ const SECTION_PANELS: Record<SettingsSection, ReactNode> = {
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+  const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: 'var(--paper)' }}>
 
-        {/* Top nav */}
-        <nav
-          className="flex items-center border-b border-chalk px-[24px] py-[12px] shrink-0 bg-bone"
-          aria-label="Settings navigation"
-        >
-          <span className="font-display text-[20px] text-ink leading-none shrink-0">Settings</span>
-
-          <div className="flex-1 flex justify-center px-[32px]">
-            <label className="flex items-center gap-[8px] bg-paper border border-chalk rounded-[8px] px-[12px] py-[7px] w-full max-w-[480px] cursor-text">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ash)" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                type="search"
-                placeholder="Search tasks, people, labels…"
-                className="bg-transparent border-0 outline-none flex-1 text-[13px] font-ui text-ink min-w-0"
-                aria-label="Search"
-              />
-            </label>
-          </div>
-
-          <div className="flex items-center gap-[8px] shrink-0">
-            <Button type="button" variant="ghost" size="icon-sm" aria-label="Notifications">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-            </Button>
-            <Button type="button" variant="solid" tone="ember" size="sm">
-              <Spark size={11} color="#fff" />
-              Ask Clarity
-            </Button>
-          </div>
-        </nav>
+        <TopBar title="Settings" searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
         {/* Settings content */}
         <div className="flex-1 flex overflow-hidden">
