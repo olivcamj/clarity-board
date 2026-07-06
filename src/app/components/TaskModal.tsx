@@ -14,7 +14,7 @@ import { Icon } from '../ui/Icon';
 import { Spark } from '../ui/Spark';
 
 export type ModalMode = 'view' | 'edit' | 'create';
-export type ColumnOption = { id: string; name: string };
+export type ColumnOption = { id: string; name: string; status?: Status };
 
 export interface TeamMemberOption {
   id: string;
@@ -227,11 +227,13 @@ export function TaskModal({
 
   const handleStartEdit = () => {
     if (task) setDraft({ ...task });
+    setTargetColumnId(columnId ?? columnOptions[0]?.id ?? '');
     setInternalMode('edit');
   };
 
   const handleSave = () => {
     if (draft && task) {
+      const targetStatus = columnOptions.find(column => column.id === targetColumnId)?.status;
       onSave?.({
         ...task,
         title:       draft.title,
@@ -241,6 +243,7 @@ export function TaskModal({
         sprint:      draft.sprint,
         labels:      draft.labels,
         subtasks:    draft.subtasks,
+        status:      targetStatus ?? task.status,
       });
     }
     setDraft(null);
@@ -249,6 +252,7 @@ export function TaskModal({
 
   const handleCancelEdit = () => {
     setDraft(null);
+    setTargetColumnId(columnId ?? columnOptions[0]?.id ?? '');
     setInternalMode('view');
   };
 
