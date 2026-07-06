@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { startTransition, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { DashboardSkeleton } from './loading';
 import { useAuthToken } from '../../lib/auth/useAuthToken';
@@ -100,6 +100,14 @@ export default function DashboardPage() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // WorkspaceProvider fetches the user (and its tasks) once and persists across
+  // navigation, so due-today/overdue stats go stale after editing tasks on the
+  // taskboard. Refetch on every dashboard visit to pick up those changes.
+  useEffect(() => {
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // `/api/users/me/full` returns tasks straight from Prisma (status is the
   // raw uppercase enum), unlike the per-board task endpoint which lowercases
   // it via TaskResponseDto — normalize it here.
@@ -163,7 +171,7 @@ export default function DashboardPage() {
     startTransition(async () => {
       try {
         const token = await getToken();
-        await apiUpdateTask(token, taskId, { status: 'DONE' });
+        await apiUpdateTask(token, taskId, { status: 'done' });
       } finally {
         refetch();
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, startTransition, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
@@ -179,12 +179,11 @@ function TaskBoardInner() {
   };
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveId(null);
-    if (!over) return;
+    if (!over) { setActiveId(null); return; }
 
     const activeTaskId = String(active.id);
     const overId       = String(over.id);
-    if (activeTaskId === overId) return;
+    if (activeTaskId === overId) { setActiveId(null); return; }
 
     const sourceColId = Object.keys(columns).find(cid =>
       columns[cid].items.some(t => t.id === activeTaskId)
@@ -192,14 +191,22 @@ function TaskBoardInner() {
     const targetColId = Object.keys(columns).find(cid =>
       cid === overId || columns[cid].items.some(t => t.id === overId)
     );
-    if (!sourceColId || !targetColId) return;
+    if (!sourceColId || !targetColId) { setActiveId(null); return; }
 
     if (sourceColId !== targetColId) {
-      // Status changed — persist to backend and emit real-time event
+      // Status changed — persist to backend and emit real-time event.
+      // Hiding the drag overlay (setActiveId) and the optimistic status move
+      // (inside updateTask) must land in the same commit — otherwise the
+      // overlay disappears in an urgent render first, flashing the real card
+      // back in its old column before the transition's render catches up.
       const newStatus = COLUMN_META[targetColId]?.status ?? 'todo';
-      updateTask(activeTaskId, { status: newStatus });
+      startTransition(() => {
+        setActiveId(null);
+        updateTask(activeTaskId, { status: newStatus });
+      });
       socket.emit('update-tasks');
     } else {
+      setActiveId(null);
       // Same-column reorder, local-only for now (position update is a future enhancement)
       // The columns derived from tasks won't reorder without position updates,
       // so this is a no-op on the server but keeps visual order during the session
@@ -351,7 +358,16 @@ function TaskBoardInner() {
             })}
           </div>
 
-          <DragOverlay>
+          {/*
+            No dropAnimation: there's no onDragOver handler moving cards
+            between column SortableContexts as you drag over them, so at drop
+            time the real card's DOM node is still measured in its source
+            column. The default drop animation flies the overlay there before
+            disappearing — visible as the card "bouncing back" — so it's
+            disabled and the overlay just vanishes once the optimistic status
+            update lands the real card in its new column.
+          */}
+          <DragOverlay dropAnimation={null}>
             {activeId
               ? (() => {
                   const activeTask = tasks.find(task => task.id === activeId);
