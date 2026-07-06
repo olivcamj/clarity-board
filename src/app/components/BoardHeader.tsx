@@ -2,6 +2,7 @@
 
 import { AvatarStack } from '../ui/Avatar';
 import { Button } from '../ui/Button';
+import { Icon } from '../ui/Icon';
 import { TopBar } from './TopBar';
 
 interface BoardHeaderProps {

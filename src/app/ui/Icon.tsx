@@ -28,7 +28,8 @@ export type IconName =
   | "search"
   | "chevron-left"
   | "chevron-down"
-  | "bell";
+  | "bell"
+  | "filter";
 
 export interface IconProps {
   name: IconName;
@@ -181,6 +182,7 @@ export function Icon({
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </>
     ),
+    filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
   };
 
   return <svg {...common}>{paths[name]}</svg>;
