@@ -35,13 +35,13 @@ export function BoardHeader({
       <TopBar title="Board" subtitle={sprintLabel} searchQuery={searchQuery} onSearchChange={onSearchChange} />
 
       {/* ── Sprint header ────────────────────────── */}
-      <div className="flex items-end justify-between px-[24px] py-[20px] border-b border-chalk bg-paper">
+      <div className="flex flex-col gap-[12px] px-[16px] py-[16px] border-b border-chalk bg-paper md:flex-row md:items-end md:justify-between md:px-[24px] md:py-[20px]">
         {/* Left: sprint info + board title */}
         <div>
           <p className="font-mono text-[10px] text-ash tracking-[0.1em] uppercase mb-[6px]">
             {sprintCode}
           </p>
-          <h1 className="font-display text-[42px] font-normal leading-[1.1] text-ink mb-[4px]">
+          <h1 className="font-display text-[28px] md:text-[42px] font-normal leading-[1.1] text-ink mb-[4px]">
             {boardName}
           </h1>
           <p className="font-ui text-[13px] text-ash italic m-0">
@@ -50,7 +50,7 @@ export function BoardHeader({
         </div>
 
         {/* Right: controls */}
-        <div className="flex items-center gap-[12px] shrink-0 pb-[4px]">
+        <div className="flex items-center gap-[12px] shrink-0 flex-wrap md:pb-[4px]">
           {/* Progress */}
           <div className="flex items-center gap-[8px]">
             <div
@@ -73,14 +73,12 @@ export function BoardHeader({
           {/* Filter (only when there are teammates to filter by) */}
           {hasTeammates && (
             <>
-              <span aria-hidden="true" className="text-chalk text-[18px] font-light">|</span>
+              <span aria-hidden="true" className="hidden md:inline text-chalk text-[18px] font-light">|</span>
               <Button type="button" variant="ghost" size="sm" aria-label="Filter tasks">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
+                <Icon name="filter" size={13} stroke={2} />
                 Filter
               </Button>
-              <span aria-hidden="true" className="text-chalk text-[18px] font-light">|</span>
+              <span aria-hidden="true" className="hidden md:inline text-chalk text-[18px] font-light">|</span>
             </>
           )}
 
@@ -91,9 +89,7 @@ export function BoardHeader({
 
           {/* New task */}
           <Button type="button" variant="solid" size="md" onClick={onNewTask}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <Icon name="plus" size={12} stroke={2.5} />
             New task
           </Button>
         </div>
