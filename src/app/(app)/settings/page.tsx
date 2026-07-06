@@ -92,9 +92,9 @@ const THEME_OPTIONS: Array<{ value: ColorTheme; label: string; icon?: ReactNode 
 
 function GeneralSettings() {
   const { workspaceName, updateWorkspaceName, workspaceRole } = useWorkspace();
+  const { theme: colorTheme, setTheme: setColorTheme } = useTheme();
   const isAdmin = workspaceRole === 'ADMIN';
   const [defaultView,      setDefaultView]      = useState<DefaultView>('board');
-  const [colorTheme,       setColorTheme]       = useState<ColorTheme>('light');
   const [weeklyDigestOn,   setWeeklyDigestOn]   = useState(true);
   const [pendingName,      setPendingName]       = useState(workspaceName);
 
