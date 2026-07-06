@@ -5,11 +5,12 @@ import type { ReactNode } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
+import { SidebarProvider, useSidebar } from '../lib/SidebarContext';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar-open';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
-export function AppFrame({
+function AppFrameInner({
   children,
   initialSidebarOpen,
 }: {
@@ -17,6 +18,7 @@ export function AppFrame({
   initialSidebarOpen: boolean;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(initialSidebarOpen);
+  const { mobileSidebarOpen, closeMobileSidebar } = useSidebar();
 
   const toggleSidebar = (open: boolean) => {
     setSidebarOpen(open);
@@ -25,10 +27,12 @@ export function AppFrame({
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <AppSidebar isOpen={sidebarOpen} onClose={() => toggleSidebar(false)} />
+      <div className="hidden md:flex">
+        <AppSidebar isOpen={sidebarOpen} onClose={() => toggleSidebar(false)} />
+      </div>
       {!sidebarOpen && (
         <div
-          className="w-[44px] shrink-0 h-screen flex flex-col items-center pt-[18px] border-r border-chalk"
+          className="hidden md:flex w-[44px] shrink-0 h-screen flex-col items-center pt-[18px] border-r border-chalk"
           style={{ background: 'var(--bone)' }}
         >
           <Button
@@ -41,9 +45,18 @@ export function AppFrame({
           </Button>
         </div>
       )}
-      <main className="flex-1 overflow-y-auto">
+      <AppSidebar mobile isOpen={mobileSidebarOpen} onClose={closeMobileSidebar} />
+      <main className="flex-1 min-w-0 overflow-y-auto">
         {children}
       </main>
     </div>
+  );
+}
+
+export function AppFrame(props: { children: ReactNode; initialSidebarOpen: boolean }) {
+  return (
+    <SidebarProvider>
+      <AppFrameInner {...props} />
+    </SidebarProvider>
   );
 }
