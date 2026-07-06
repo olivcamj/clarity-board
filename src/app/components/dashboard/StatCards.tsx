@@ -38,7 +38,7 @@ function StatCard({
 
 export function StatCards({ dueToday, overdue, inFlight }: StatCardsProps) {
   return (
-    <div className="flex gap-[12px] mb-[28px]">
+    <div className="grid grid-cols-1 gap-[10px] mb-[20px] min-[425px]:grid-cols-2 md:flex md:gap-[12px] md:mb-[28px]">
       <StatCard
         icon={<Icon name="clock" size={16} color="var(--sky)" />}
         count={dueToday}
