@@ -212,7 +212,7 @@ export function AppSidebar({
         <nav aria-label="Boards" className="mt-[18px]">
           <NavSectionLabel>Boards</NavSectionLabel>
           <ul className="list-none m-0 p-0 flex flex-col" style={{ gap: 2 }}>
-            {loading ? (
+            {loading && allBoards.length === 0 ? (
               [44, 60, 36].map((w, i) => (
                 <li key={i} className="flex items-center gap-[9px] px-[8px] py-[7px]" aria-hidden="true">
                   <span className="w-[7px] h-[7px] rounded-full bg-chalk animate-pulse shrink-0" />
@@ -258,7 +258,7 @@ export function AppSidebar({
 
       {/* Footer — user identity + settings */}
       <div className="border-t border-chalk px-[12px] py-[10px] flex items-center gap-[10px]">
-        {loading || !user ? (
+        {!user ? (
           <>
             <div className="w-[30px] h-[30px] rounded-full bg-chalk animate-pulse shrink-0" aria-hidden="true" />
             <div className="flex-1 flex flex-col gap-[6px]">
