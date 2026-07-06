@@ -81,9 +81,11 @@ const SUGGESTIONS_PENDING: number = 3;
 export function AppSidebar({
   isOpen,
   onClose,
+  mobile = false,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  mobile?: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -91,16 +93,32 @@ export function AppSidebar({
   const { teams, boardsByTeam, user, workspaceName, loading } = useWorkspace();
   const allBoards = teams.flatMap(team => boardsByTeam[team.id] ?? []);
 
+  const panelClassName = [
+    'shrink-0 h-screen overflow-hidden flex flex-col border-r border-chalk',
+    'transition-[width,opacity] duration-200 ease-in-out',
+    isOpen ? 'w-[260px] opacity-100' : 'w-0 opacity-0 border-r-0 pointer-events-none',
+  ].join(' ');
+
+  const drawerClassName = [
+    'md:hidden fixed inset-y-0 left-0 z-50 w-[260px] h-screen overflow-hidden flex flex-col border-r border-chalk',
+    'transition-transform duration-200 ease-in-out',
+    isOpen ? 'translate-x-0' : '-translate-x-full',
+  ].join(' ');
+
   return (
-    <aside
-      aria-label="App navigation"
-      className={[
-        'shrink-0 h-screen overflow-hidden flex flex-col border-r border-chalk',
-        'transition-[width,opacity] duration-200 ease-in-out',
-        isOpen ? 'w-[260px] opacity-100' : 'w-0 opacity-0 border-r-0 pointer-events-none',
-      ].join(' ')}
-      style={{ background: 'var(--bone)' }}
-    >
+    <>
+      {mobile && isOpen && (
+        <div
+          aria-hidden="true"
+          onClick={onClose}
+          className="md:hidden fixed inset-0 z-40 bg-black/40"
+        />
+      )}
+      <aside
+        aria-label="App navigation"
+        className={mobile ? drawerClassName : panelClassName}
+        style={{ background: 'var(--bone)' }}
+      >
       {/* Logo */}
       <div className="flex items-center justify-between gap-[8px] px-[16px] pt-[18px] pb-[14px]">
         <div className="flex items-center gap-[8px] min-w-0">
