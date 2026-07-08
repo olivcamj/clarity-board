@@ -306,8 +306,11 @@ export function TaskModal({
   const subtasksForDisplay = (isEditing || isCreating) ? (draft?.subtasks ?? []) : (task?.subtasks ?? []);
   const doneSubs = subtasksForDisplay.filter(s => s.done).length;
   const totalSubs = subtasksForDisplay.length;
-  // Show column picker when creating from the header (no pre-set column)
-  const showColumnPicker = isCreating && columnOptions.length > 0 && !columnId;
+  // Show the column picker when creating from the header (no pre-set column)
+  // or whenever editing an existing task (lets it be moved without dragging).
+  const showColumnPicker =
+    (isCreating && columnOptions.length > 0 && !columnId) ||
+    (isEditing && columnOptions.length > 0);
 
   return (
     <>
