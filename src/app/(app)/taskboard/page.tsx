@@ -11,6 +11,7 @@ import { Droppable } from '../../components/Droppable';
 import { BoardHeader } from '../../components/BoardHeader';
 import { TaskCard } from '../../components/TaskCard';
 import { TaskModal } from '../../components/TaskModal';
+import { MobileBoardView } from '../../components/MobileBoardView';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LABELS, PEOPLE_BY_ID } from '../../data/labels';
