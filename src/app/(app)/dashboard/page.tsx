@@ -9,8 +9,9 @@ import { updateTask as apiUpdateTask } from '../../lib/api/tasks';
 import { TopBar } from '../../components/TopBar';
 import { StatCards } from '../../components/dashboard/StatCards';
 import { MyTasksList, type MyTask } from '../../components/dashboard/MyTasksList';
-import { ClaritySuggestions } from '../../components/dashboard/ClaritySuggestions';
-import { ActivityFeed } from '../../components/dashboard/ActivityFeed';
+// Hardcoded placeholder data, no backend yet — hidden until a real feed/suggestions API exists.
+// import { ClaritySuggestions } from '../../components/dashboard/ClaritySuggestions';
+// import { ActivityFeed } from '../../components/dashboard/ActivityFeed';
 import { CreateMenu } from '../../components/dashboard/CreateMenu';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import type { Status } from '../../types/task';
@@ -215,10 +216,10 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 gap-[24px] md:grid-cols-[1fr_360px] md:gap-[32px]">
           <MyTasksList tasks={myTasks} onComplete={handleComplete} searchQuery={searchQuery} />
-          <div>
+          {/* <div>
             <ClaritySuggestions />
             <ActivityFeed />
-          </div>
+          </div> */}
         </div>
 
         {/* No. II — Your boards */}
