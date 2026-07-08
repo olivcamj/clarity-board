@@ -4,7 +4,7 @@ import type { FormEvent, KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { Task, Priority, Status, LabelKey } from '@/types/task';
 import { LABELS, personName } from '@/data/labels';
-import { formatDate } from '@/lib/utils';
+import { formatDate, timeAgo } from '@/lib/utils';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -35,6 +35,10 @@ export interface TaskModalProps {
   ) => void;
   onDelete?: () => void | Promise<void>;
   onToggleSubtask?: (subtaskId: string) => void;
+  onAddComment?: (text: string) => void;
+  onEditComment?: (commentId: string, text: string) => void;
+  onRemoveComment?: (commentId: string) => void;
+  currentUserId?: string;
 }
 
 const STATUS_CONFIG: Record<Status, { label: string; dot: string }> = {
@@ -162,9 +166,15 @@ export function TaskModal({
   onCreate,
   onDelete,
   onToggleSubtask,
+  onAddComment,
+  onEditComment,
+  onRemoveComment,
+  currentUserId,
 }: TaskModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [commentText, setCommentText] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
   const [internalMode, setInternalMode] = useState<ModalMode>(mode);
   const [draft, setDraft] = useState<Task | null>(() =>
     mode === 'create'
@@ -285,7 +295,7 @@ export function TaskModal({
   const handleCommentSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    // TODO: persist comment to backend
+    onAddComment?.(commentText.trim());
     setCommentText('');
   };
 
@@ -542,7 +552,9 @@ export function TaskModal({
                   <ol aria-label="Comments" className="list-none m-0 mb-[24px] p-0 flex flex-col gap-[22px]">
                     {task.conversation.map(comment => {
                       const isClarity = comment.isAI;
-                      const name = isClarity ? 'Clarity' : personName(comment.authorId);
+                      const name = isClarity ? 'Clarity' : (comment.authorName ?? personName(comment.authorId));
+                      const isOwn = !isClarity && !!currentUserId && comment.authorId === currentUserId;
+                      const isEditingComment = editingCommentId === comment.id;
                       return (
                         <li key={comment.id} className="flex gap-[12px] items-start">
                           {isClarity ? (
@@ -560,11 +572,75 @@ export function TaskModal({
                             <header className="flex items-center gap-[8px] mb-[5px]">
                               <strong className="text-[13px] text-ink font-ui font-semibold">{name}</strong>
                               {isClarity && <Badge tone="ai" size="sm">AI</Badge>}
-                              <time className="text-[11px] text-ash font-mono">{comment.timestamp}</time>
+                              <time className="text-[11px] text-ash font-mono" title={new Date(comment.timestamp).toLocaleString()}>
+                                {timeAgo(comment.timestamp)}
+                              </time>
+                              {isOwn && !isEditingComment && (
+                                <div className="ml-auto flex items-center gap-[10px]">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingCommentId(comment.id);
+                                      setEditingText(comment.text);
+                                    }}
+                                    aria-label="Edit comment"
+                                    className="text-ash hover:text-slate transition-colors duration-150 shrink-0"
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                      <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onRemoveComment?.(comment.id)}
+                                    aria-label="Delete comment"
+                                    className="text-ash hover:text-rose transition-colors duration-150 shrink-0"
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
                             </header>
-                            <p className={`text-[13px] leading-[1.55] m-0 font-ui ${isClarity ? 'text-ember italic' : 'text-soot'}`}>
-                              {comment.text}
-                            </p>
+                            {isEditingComment ? (
+                              <div>
+                                <textarea
+                                  aria-label="Edit comment"
+                                  value={editingText}
+                                  onChange={e => setEditingText(e.target.value)}
+                                  rows={2}
+                                  autoFocus
+                                  className={`${FIELD_CLS} resize-none mb-[8px]`}
+                                />
+                                <div className="flex items-center gap-[8px]">
+                                  <Button
+                                    type="button"
+                                    variant="solid"
+                                    size="sm"
+                                    disabled={!editingText.trim()}
+                                    onClick={() => {
+                                      onEditComment?.(comment.id, editingText.trim());
+                                      setEditingCommentId(null);
+                                    }}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingCommentId(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className={`text-[13px] leading-[1.55] m-0 font-ui ${isClarity ? 'text-ember italic' : 'text-soot'}`}>
+                                {comment.text}
+                              </p>
+                            )}
                           </article>
                         </li>
                       );
