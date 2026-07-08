@@ -327,7 +327,8 @@ export function TaskModal({
       {/* Dialog positioner — owns the close-on-backdrop-click */}
       <div
         onClick={isEditing ? undefined : onClose}
-        style={{ position: 'fixed', inset: 0, zIndex: 51, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        className="p-[12px] md:p-[24px]"
+        style={{ position: 'fixed', inset: 0, zIndex: 51, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         {/* Dialog stops clicks from reaching the positioner */}
         <div
@@ -337,11 +338,11 @@ export function TaskModal({
           ref={dialogRef}
           onKeyDown={handleKeyDown}
           onClick={e => e.stopPropagation()}
-          className="bg-paper rounded-[16px] shadow-[var(--shadow-3)] flex w-full max-w-[920px] max-h-[90vh] overflow-hidden outline-none"
+          className="bg-paper rounded-[16px] shadow-[var(--shadow-3)] flex flex-col md:flex-row w-full max-w-[920px] max-h-[90vh] overflow-y-auto md:overflow-hidden outline-none"
         >
 
           {/* ── Left panel ──────────────────────────────── */}
-          <div className="flex-1 overflow-y-auto p-[36px] min-w-0">
+          <div className="flex-1 overflow-visible md:overflow-y-auto p-[20px] md:p-[36px] min-w-0">
 
             {/* Breadcrumb — view/edit only */}
             {!isCreating && task && statusConfig && (
@@ -385,10 +386,10 @@ export function TaskModal({
                 placeholder="Task title…"
                 aria-label="Task title"
                 autoFocus={isCreating}
-                className="font-display text-[34px] font-normal leading-[1.15] text-ink bg-transparent w-full mb-[12px] outline-none border-0 border-b border-chalk focus:border-slate transition-colors duration-150"
+                className="font-display text-[24px] md:text-[34px] font-normal leading-[1.15] text-ink bg-transparent w-full mb-[12px] outline-none border-0 border-b border-chalk focus:border-slate transition-colors duration-150"
               />
             ) : (
-              <h1 id="modal-title" className="font-display text-[34px] font-normal leading-[1.15] text-ink mb-[12px]">
+              <h1 id="modal-title" className="font-display text-[24px] md:text-[34px] font-normal leading-[1.15] text-ink mb-[12px]">
                 {task?.title ?? ''}
               </h1>
             )}
@@ -607,7 +608,7 @@ export function TaskModal({
           {/* ── Right panel ─────────────────────────────── */}
           <aside
             aria-label="Task details"
-            className="w-[260px] shrink-0 border-l border-chalk py-[16px] px-[22px] overflow-y-auto"
+            className="w-full md:w-[260px] shrink-0 border-t md:border-t-0 md:border-l border-chalk py-[16px] px-[16px] md:px-[22px] overflow-visible md:overflow-y-auto"
           >
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-[24px]">
