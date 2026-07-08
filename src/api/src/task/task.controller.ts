@@ -14,6 +14,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateSubtaskDto } from './dto/create-subtask.dto';
 import { UpdateSubtaskDto } from './dto/update-subtask.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { TeamMemberGuard } from '../guards/team-member.guard';
@@ -110,6 +111,23 @@ export class TaskController {
     @CurrentUser() currentUser: { userId: string },
   ) {
     return this.taskService.addComment(taskId, dto, currentUser.userId);
+  }
+
+  @ResourceContext('task')
+  @TeamRoles(MemberRole.EDITOR, MemberRole.ADMIN)
+  @Patch('tasks/:id/comments/:commentId')
+  updateComment(
+    @Param('id') taskId: string,
+    @Param('commentId') commentId: string,
+    @Body() dto: UpdateCommentDto,
+    @CurrentUser() currentUser: { userId: string },
+  ) {
+    return this.taskService.updateComment(
+      taskId,
+      commentId,
+      dto,
+      currentUser.userId,
+    );
   }
 
   @ResourceContext('task')
