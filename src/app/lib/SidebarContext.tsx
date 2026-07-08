@@ -3,18 +3,31 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 interface SidebarContextValue {
+  /** False outside a SidebarProvider (e.g. the standalone /demo pages) — there's no drawer to open, so TopBar hides its menu button. */
+  hasSidebar: boolean;
   mobileSidebarOpen: boolean;
   openMobileSidebar: () => void;
   closeMobileSidebar: () => void;
   toggleMobileSidebar: () => void;
 }
 
-const SidebarContext = createContext<SidebarContextValue | null>(null);
+const noop = () => {};
+
+const DEFAULT_VALUE: SidebarContextValue = {
+  hasSidebar: false,
+  mobileSidebarOpen: false,
+  openMobileSidebar: noop,
+  closeMobileSidebar: noop,
+  toggleMobileSidebar: noop,
+};
+
+const SidebarContext = createContext<SidebarContextValue>(DEFAULT_VALUE);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const value = useMemo<SidebarContextValue>(() => ({
+    hasSidebar: true,
     mobileSidebarOpen,
     openMobileSidebar: () => setMobileSidebarOpen(true),
     closeMobileSidebar: () => setMobileSidebarOpen(false),
@@ -29,7 +42,5 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
 }
 
 export function useSidebar() {
-  const ctx = useContext(SidebarContext);
-  if (!ctx) throw new Error('useSidebar must be used within a SidebarProvider');
-  return ctx;
+  return useContext(SidebarContext);
 }
