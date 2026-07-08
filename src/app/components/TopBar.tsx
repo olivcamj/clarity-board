@@ -15,7 +15,7 @@ interface TopBarProps {
 }
 
 export function TopBar({ title, subtitle, showHomeIcon, searchQuery, onSearchChange }: TopBarProps) {
-  const { toggleMobileSidebar } = useSidebar();
+  const { hasSidebar, toggleMobileSidebar } = useSidebar();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // If the window is resized/rotated back past `md` while the mobile search
@@ -62,16 +62,18 @@ export function TopBar({ title, subtitle, showHomeIcon, searchQuery, onSearchCha
         </div>
       ) : (
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Open menu"
-            className="md:hidden"
-            onClick={toggleMobileSidebar}
-          >
-            <Icon name="menu" size={16} />
-          </Button>
+          {hasSidebar && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Open menu"
+              className="md:hidden"
+              onClick={toggleMobileSidebar}
+            >
+              <Icon name="menu" size={16} />
+            </Button>
+          )}
 
           {/* Logo / page label */}
           <div className="flex items-baseline gap-[10px] shrink-0 min-w-0">
