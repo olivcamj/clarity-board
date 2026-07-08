@@ -697,7 +697,7 @@ export function TaskModal({
 
             <dl className="m-0 p-0">
 
-              {/* Column picker — only in create mode from the header */}
+              {/* Column picker — create-from-header, or editing (to move the task) */}
               {showColumnPicker && (
                 <>
                   <MetaTerm>Column</MetaTerm>
