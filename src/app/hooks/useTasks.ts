@@ -10,6 +10,7 @@ import {
   updateSubtask as apiUpdateSubtask,
   addSubtask as apiAddSubtask,
   addComment as apiAddComment,
+  updateComment as apiUpdateComment,
   removeComment as apiRemoveComment,
   adaptBackendTask,
 } from '../lib/api/tasks';
@@ -262,6 +263,21 @@ export function useTasks(boardId: string | null) {
     [getToken, setOpError]
   );
 
+  const editComment = useCallback(
+    async (taskId: string, commentId: string, text: string) => {
+      try {
+        const token = await getToken();
+        const updated = await apiUpdateComment(token, taskId, commentId, { text });
+        setServerTasks(prev =>
+          prev.map(task => (task.id === taskId ? adaptBackendTask(updated) : task))
+        );
+      } catch (err) {
+        setOpError(err instanceof Error ? err.message : 'Failed to edit comment');
+      }
+    },
+    [getToken, setOpError]
+  );
+
   const removeComment = useCallback(
     async (taskId: string, commentId: string) => {
       try {
@@ -289,6 +305,7 @@ export function useTasks(boardId: string | null) {
     deleteTask,
     toggleSubtask,
     addComment,
+    editComment,
     removeComment,
   };
 }
