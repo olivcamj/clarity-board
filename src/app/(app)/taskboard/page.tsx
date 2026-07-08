@@ -83,9 +83,12 @@ function TaskBoardInner() {
     updateTask,
     deleteTask,
     toggleSubtask,
+    addComment,
+    editComment,
+    removeComment,
   } = useTasks(boardId);
 
-  const { boardsByTeam } = useWorkspace();
+  const { boardsByTeam, user } = useWorkspace();
   const getToken = useAuthToken();
 
   const currentBoard = useMemo(() => {
@@ -384,6 +387,10 @@ function TaskBoardInner() {
             setSelectedTaskId(null);
           }}
           onToggleSubtask={(subtaskId) => toggleSubtask(selectedTask.id, subtaskId)}
+          onAddComment={(text) => addComment(selectedTask.id, text)}
+          onEditComment={(commentId, text) => editComment(selectedTask.id, commentId, text)}
+          onRemoveComment={(commentId) => removeComment(selectedTask.id, commentId)}
+          currentUserId={user?.id}
         />
       )}
 
