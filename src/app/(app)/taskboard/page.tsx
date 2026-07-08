@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { Draggable } from '../../components/Draggable';
 import { Droppable } from '../../components/Droppable';
 import { BoardHeader } from '../../components/BoardHeader';
@@ -48,13 +47,7 @@ const STATUS_TO_COLUMN: Record<Status, string> = {
   done:   'approved',
 };
 
-const COLUMN_NAMES: Record<string, string> = {
-  todo:      'To Do',
-  in_review: 'In Review',
-  approved:  'Approved',
-};
-
-// Derive column structure from flat task list 
+// Derive column structure from flat task list
 
 function tasksToColumns(tasks: Task[]): Record<string, { name: string; items: Task[] }> {
   const cols: Record<string, { name: string; items: Task[] }> = {
@@ -146,7 +139,11 @@ function TaskBoardInner() {
   const doneTasks = tasks.filter(t => t.status === 'done').length;
   const progress  = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
   const teamNames = teamMembers.map(m => m.name);
-  const columnOptions = Object.entries(columns).map(([id, col]) => ({ id, name: col.name }));
+  const columnOptions = Object.entries(columns).map(([id, col]) => ({
+    id,
+    name: col.name,
+    status: COLUMN_META[id]?.status,
+  }));
 
   // Filtered columns for search
   const filteredColumns = searchQuery.trim()
@@ -208,27 +205,10 @@ function TaskBoardInner() {
       socket.emit('update-tasks');
     } else {
       setActiveId(null);
-      // Same-column reorder, local-only for now (position update is a future enhancement)
-      // The columns derived from tasks won't reorder without position updates,
-      // so this is a no-op on the server but keeps visual order during the session
-      // via the arrayMove logic below on the tasks array.
-      const sourceItems = columns[sourceColId].items;
-      const oldIndex    = sourceItems.findIndex(t => t.id === activeTaskId);
-      const newIndex    = sourceItems.findIndex(t => t.id === overId);
-      if (oldIndex !== -1 && newIndex !== -1) {
-        // Reorder within the flat tasks array to preserve visual order
-        const reordered = arrayMove(
-          tasks.filter(t => STATUS_TO_COLUMN[t.status] === sourceColId),
-          oldIndex,
-          newIndex
-        );
-        // Rebuild the full tasks array with the reordered segment in place
-        // (other tasks are unaffected)
-        const otherTasks = tasks.filter(t => STATUS_TO_COLUMN[t.status] !== sourceColId);
-        // We need to update the hook's tasks state — simplest: call updateTask with same status
-        // to trigger a re-fetch, or just leave the reorder as visual-only for now.
-        // TODO: persist position via PATCH /api/tasks/:id { position: newIndex }
-      }
+      // Same-column reorder isn't persisted: tasks have no position field yet,
+      // and columns are always derived fresh from the tasks array, so there's
+      // nothing to apply locally either.
+      // TODO: persist position via PATCH /api/tasks/:id { position: newIndex }
     }
   };
 
@@ -282,7 +262,7 @@ function TaskBoardInner() {
         onSearchChange={setSearchQuery}
       />
 
-      <div className="flex-1 overflow-x-auto">
+      <div className="hidden md:block flex-1 overflow-x-auto">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -379,18 +359,28 @@ function TaskBoardInner() {
         </DndContext>
       </div>
 
+      <MobileBoardView
+        columns={filteredColumns}
+        columnMeta={COLUMN_META}
+        onTaskClick={setSelectedTaskId}
+        onToggleSubtask={toggleSubtask}
+        onAddTask={setCreateColumnId}
+      />
+
       {/* Task detail / edit modal */}
       {selectedTask && (
         <TaskModal
           task={selectedTask}
           teamMembers={teamMembers}
+          columnId={STATUS_TO_COLUMN[selectedTask.status]}
+          columnOptions={columnOptions}
           onClose={() => setSelectedTaskId(null)}
-          onSave={async (updated) => {
-            await updateTask(updated.id, updated);
+          onSave={(updated) => {
+            updateTask(updated.id, updated);
             setSelectedTaskId(null);
           }}
-          onDelete={async () => {
-            await deleteTask(selectedTask.id);
+          onDelete={() => {
+            deleteTask(selectedTask.id);
             setSelectedTaskId(null);
           }}
           onToggleSubtask={(subtaskId) => toggleSubtask(selectedTask.id, subtaskId)}
