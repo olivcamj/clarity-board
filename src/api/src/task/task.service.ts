@@ -10,6 +10,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateSubtaskDto } from './dto/create-subtask.dto';
 import { UpdateSubtaskDto } from './dto/update-subtask.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import { TaskResponseDto, taskIncludes } from './dto/task-response.dto';
 
 @Injectable()
@@ -184,6 +185,31 @@ export class TaskService {
       },
     });
 
+    return this.findOne(taskId);
+  }
+
+  async updateComment(
+    taskId: string,
+    commentId: string,
+    dto: UpdateCommentDto,
+    userId: string,
+  ): Promise<TaskResponseDto> {
+    const comment = await this.prisma.taskComment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment || comment.taskId !== taskId) {
+      throw new NotFoundException(
+        `Comment ${commentId} not found on task ${taskId}`,
+      );
+    }
+    if (!comment.isAI && comment.authorId !== userId) {
+      throw new ForbiddenException('You can only edit your own comments');
+    }
+
+    await this.prisma.taskComment.update({
+      where: { id: commentId },
+      data: { text: dto.text },
+    });
     return this.findOne(taskId);
   }
 

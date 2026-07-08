@@ -72,6 +72,7 @@ describe('TaskService', () => {
     taskComment: {
       create: jest.fn().mockResolvedValue(mockComment),
       findUnique: jest.fn().mockResolvedValue(mockComment),
+      update: jest.fn().mockResolvedValue(mockComment),
       delete: jest.fn().mockResolvedValue(mockComment),
     },
   };
@@ -428,6 +429,69 @@ describe('TaskService', () => {
       await expect(
         service.addComment('bad-id', { text: 'Hi' } as any, 'user-1'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateComment', () => {
+    it('should update a comment and return the updated task', async () => {
+      const result = await service.updateComment(
+        'task-1',
+        'comment-1',
+        { text: 'Edited text' } as any,
+        'user-1',
+      );
+
+      expect(result.id).toBe('task-1');
+      expect(mockPrismaService.taskComment.update).toHaveBeenCalledWith({
+        where: { id: 'comment-1' },
+        data: { text: 'Edited text' },
+      });
+    });
+
+    it('should throw NotFoundException if comment does not exist', async () => {
+      mockPrismaService.taskComment.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.updateComment(
+          'task-1',
+          'bad-comment',
+          { text: 'Edited' } as any,
+          'user-1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if comment belongs to a different task', async () => {
+      mockPrismaService.taskComment.findUnique.mockResolvedValueOnce({
+        ...mockComment,
+        taskId: 'other-task',
+      });
+
+      await expect(
+        service.updateComment(
+          'task-1',
+          'comment-1',
+          { text: 'Edited' } as any,
+          'user-1',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("should throw ForbiddenException when a user tries to edit another user's comment", async () => {
+      mockPrismaService.taskComment.findUnique.mockResolvedValueOnce({
+        ...mockComment,
+        isAI: false,
+        authorId: 'user-2', // owned by user-2, not user-1
+      });
+
+      await expect(
+        service.updateComment(
+          'task-1',
+          'comment-1',
+          { text: 'Edited' } as any,
+          'user-1',
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
