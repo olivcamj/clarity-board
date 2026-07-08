@@ -94,6 +94,10 @@ export interface CreateCommentPayload {
   isAI?: boolean;
 }
 
+export interface UpdateCommentPayload {
+  text: string;
+}
+
 // ── Case-conversion helpers (internal) ───────────────────────────────────────
 
 const STATUS_UP: Record<string, BackendTaskStatus> = {
@@ -147,12 +151,13 @@ export function adaptBackendTask(bt: BackendTask): Task {
     })),
     // `comments` on Task is a count; full thread goes in `conversation`
     comments:     bt.comments.length,
-    conversation: bt.comments.map((c): TaskComment => ({
-      id:        c.id,
-      authorId:  c.author?.id ?? 'clarity',
-      text:      c.text,
-      timestamp: c.createdAt,
-      isAI:      c.isAI,
+    conversation: bt.comments.map((comment): TaskComment => ({
+      id:         comment.id,
+      authorId:   comment.author?.id ?? 'clarity',
+      authorName: comment.author?.name,
+      text:       comment.text,
+      timestamp:  comment.createdAt,
+      isAI:       comment.isAI,
     })),
   };
 }
@@ -254,6 +259,18 @@ export function addComment(
 ): Promise<BackendTask> {
   return apiClient<BackendTask>(`api/tasks/${taskId}/comments`, token, {
     method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateComment(
+  token: string,
+  taskId: string,
+  commentId: string,
+  payload: UpdateCommentPayload,
+): Promise<BackendTask> {
+  return apiClient<BackendTask>(`api/tasks/${taskId}/comments/${commentId}`, token, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 }

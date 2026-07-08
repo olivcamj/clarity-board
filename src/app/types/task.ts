@@ -38,7 +38,8 @@ export interface Attachment {
 
 export interface TaskComment {
   id: string;
-  authorId: string;   // person ID from PEOPLE_BY_ID, or "clarity" for AI
+  authorId: string;   // backend user ID, or "clarity" for AI
+  authorName?: string; // display name from the backend; falls back to PEOPLE_BY_ID lookup
   text: string;
   timestamp: string;
   isAI?: boolean;
