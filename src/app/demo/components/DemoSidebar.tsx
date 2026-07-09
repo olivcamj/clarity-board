@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Spark } from '../../ui/Spark';
+import { ClarityLogo } from '../../ui/ClarityLogo';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 
@@ -96,13 +97,7 @@ export function DemoSidebar({ boards, user }: DemoSidebarProps) {
 
       {/* Logo */}
       <div className="flex items-center gap-[8px] px-[16px] pt-[14px] pb-[14px]">
-        <div
-          className="flex items-center justify-center rounded-[6px] shrink-0"
-          style={{ width: 24, height: 24, background: 'var(--ember)', color: '#fff' }}
-          aria-hidden="true"
-        >
-          <Spark size={13} color="#fff" />
-        </div>
+        <ClarityLogo size={24} />
         <span className="font-display text-[16px] text-ink leading-none">ClarityBoard</span>
       </div>
 
