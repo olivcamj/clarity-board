@@ -1,6 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from './prisma.service';
-import { PrismaClient } from '../../generated/client';
+
+// Stub the pg Pool so the constructor doesn't need a real DATABASE_URL.
+jest.mock('pg', () => ({
+  Pool: jest.fn().mockImplementation(() => ({})),
+}));
+
+// Stub the adapter so PrismaService can be instantiated without a live DB.
+jest.mock('@prisma/adapter-pg', () => ({
+  PrismaPg: jest.fn().mockImplementation(() => ({})),
+}));
+
+// Replace the generated PrismaClient base class with a lightweight stub.
+// This prevents Prisma 7's adapter-validation logic from running in tests.
+jest.mock('../../generated/client', () => ({
+  PrismaClient: class MockPrismaClient {
+    $connect    = jest.fn().mockResolvedValue(undefined);
+    $disconnect = jest.fn().mockResolvedValue(undefined);
+    constructor(_options?: unknown) {}
+  },
+}));
 
 describe('PrismaService', () => {
   let service: PrismaService;
@@ -19,17 +38,18 @@ describe('PrismaService', () => {
 
   it('should call $connect on init', async () => {
     const connectSpy = jest
-      .spyOn(PrismaClient.prototype, '$connect')
-      .mockResolvedValue();
+      .spyOn(service as any, '$connect')
+      .mockResolvedValue(undefined);
 
     await service.onModuleInit();
+
     expect(connectSpy).toHaveBeenCalled();
   });
 
   it('should call $disconnect on destroy', async () => {
     const disconnectSpy = jest
-      .spyOn(PrismaClient.prototype, '$disconnect')
-      .mockResolvedValue();
+      .spyOn(service as any, '$disconnect')
+      .mockResolvedValue(undefined);
 
     await service.onModuleDestroy();
 

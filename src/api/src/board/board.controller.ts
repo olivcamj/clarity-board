@@ -13,60 +13,51 @@ import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
 import { ClerkAuthGuard } from '../guards/clerk-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorators';
-import { UserRole } from '../../generated/client';
+import { TeamMemberGuard } from '../guards/team-member.guard';
+import { TeamRoles } from '../common/decorators/team-roles.decorator';
+import { ResourceContext } from '../common/decorators/resource-type.decorator';
+import { MemberRole } from '../../generated/client';
 
-@UseGuards(ClerkAuthGuard, RolesGuard)
+@UseGuards(ClerkAuthGuard, RolesGuard, TeamMemberGuard)
 @Controller('api/boards')
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
-  /**
-   * POST /api/boards
-   * Create a new board for a team
-   */
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  // EDITOR+ can create a board (teamId resolved from request body)
+  @ResourceContext('board')
+  @TeamRoles(MemberRole.EDITOR, MemberRole.ADMIN)
   @Post()
-  async create(@Body() createBoardDto: CreateBoardDto) {
-    return this.boardService.create(createBoardDto);
+  async create(@Body() dto: CreateBoardDto) {
+    return this.boardService.create(dto);
   }
 
-  /**
-   * GET /api/boards/team/:teamId
-   * Get all boards for a team (with task counts)
-   */
+  // Any team member (VIEWER+) can list a team's boards
+  @ResourceContext('team')
+  @TeamRoles(MemberRole.VIEWER, MemberRole.EDITOR, MemberRole.ADMIN)
   @Get('team/:teamId')
   async findAllByTeam(@Param('teamId') teamId: string) {
     return this.boardService.findAllByTeam(teamId);
   }
 
-  /**
-   * GET /api/boards/:id
-   * Get a single board with its full task list
-   */
+  // Any team member can view a board
+  @ResourceContext('board')
+  @TeamRoles(MemberRole.VIEWER, MemberRole.EDITOR, MemberRole.ADMIN)
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.boardService.findOne(id);
   }
 
-  /**
-   * PUT /api/boards/:id
-   * Update a board's name
-   */
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  // EDITOR+ can rename a board
+  @ResourceContext('board')
+  @TeamRoles(MemberRole.EDITOR, MemberRole.ADMIN)
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateBoardDto: UpdateBoardDto,
-  ) {
-    return this.boardService.update(id, updateBoardDto);
+  async update(@Param('id') id: string, @Body() dto: UpdateBoardDto) {
+    return this.boardService.update(id, dto);
   }
 
-  /**
-   * DELETE /api/boards/:id
-   * Delete a board
-   */
-  @Roles(UserRole.ADMIN)
+  // ADMIN only can delete a board
+  @ResourceContext('board')
+  @TeamRoles(MemberRole.ADMIN)
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.boardService.remove(id);

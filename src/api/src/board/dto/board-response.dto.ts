@@ -1,8 +1,13 @@
+interface AssigneeInput {
+  id: string;
+  name: string;
+}
+
 interface TaskInput {
   id: string;
   title: string;
   status: string;
-  assignedTo?: { id: string; name: string } | null;
+  assignees?: AssigneeInput[];
 }
 
 interface BoardInput {
@@ -24,10 +29,7 @@ export class BoardResponseDto {
     id: string;
     title: string;
     status: string;
-    assignedTo?: {
-      id: string;
-      name: string;
-    };
+    assignees: Array<{ id: string; name: string }>;
   }>;
 
   constructor(board: BoardInput, includeRelations = false) {
@@ -41,12 +43,7 @@ export class BoardResponseDto {
         id: task.id,
         title: task.title,
         status: task.status,
-        ...(task.assignedTo && {
-          assignedTo: {
-            id: task.assignedTo.id,
-            name: task.assignedTo.name,
-          },
-        }),
+        assignees: task.assignees ?? [],
       }));
     } else {
       this.taskCount = board._count?.tasks ?? board.tasks?.length ?? 0;
