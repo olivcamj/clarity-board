@@ -5,6 +5,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'solid' | 'outline' | 'ghost';
   tone?: 'primary' | 'ember' | 'rose';
   size?: 'sm' | 'md' | 'icon-sm' | 'icon-md';
+  // Not supported. Declared so it can be stripped if a caller (e.g. a library that
+  // clones this element, like Clerk's SignInButton) injects it without type-checking.
+  asChild?: never;
 }
 
 const BASE =
@@ -41,7 +44,7 @@ const SIZE: Record<string, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  function Button({ variant = 'ghost', tone = 'primary', size = 'md', className, children, ...props }, ref) {
+  function Button({ variant = 'ghost', tone = 'primary', size = 'md', className, children, asChild: _asChild, ...props }, ref) {
     const cls = [BASE, VARIANT_TONE[variant][tone], SIZE[size], className]
       .filter(Boolean)
       .join(' ');
