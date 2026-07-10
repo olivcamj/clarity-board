@@ -13,6 +13,7 @@ interface BoardHeaderProps {
   progress: number;      // 0–100
   teamNames: string[];
   hasTeammates?: boolean;
+  onlineNames?: string[];
   onNewTask: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -26,6 +27,7 @@ export function BoardHeader({
   progress,
   teamNames,
   hasTeammates = false,
+  onlineNames = [],
   onNewTask,
   searchQuery,
   onSearchChange,
@@ -80,6 +82,11 @@ export function BoardHeader({
               </Button>
               <span aria-hidden="true" className="hidden md:inline text-chalk text-[18px] font-light">|</span>
             </>
+          )}
+
+          {/* Online now */}
+          {onlineNames.length > 0 && (
+            <AvatarStack names={onlineNames} size={28} max={4} label="Online now" />
           )}
 
           {/* Team avatars */}
