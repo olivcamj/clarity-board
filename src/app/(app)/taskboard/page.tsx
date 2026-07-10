@@ -2,7 +2,6 @@
 
 import { Suspense, startTransition, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { io } from 'socket.io-client';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { Draggable } from '../../components/Draggable';
@@ -15,6 +14,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LABELS, PEOPLE_BY_ID } from '../../data/labels';
 import { useTasks } from '../../hooks/useTasks';
+import { useBoardPresence } from '../../hooks/useBoardPresence';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { useAuthToken } from '../../lib/auth/useAuthToken';
 import { getTeamMembers, type TeamMember } from '../../lib/api/teams';
@@ -62,11 +62,7 @@ function tasksToColumns(tasks: Task[]): Record<string, { name: string; items: Ta
   return cols;
 }
 
-//  Socket (module-level, shared) 
-
-const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL);
-
-//  Inner board component (needs Suspense for useSearchParams) 
+//  Inner board component (needs Suspense for useSearchParams)
 
 function TaskBoardInner() {
   const searchParams = useSearchParams();
@@ -90,6 +86,7 @@ function TaskBoardInner() {
 
   const { boardsByTeam, user } = useWorkspace();
   const getToken = useAuthToken();
+  const onlineUsers = useBoardPresence(boardId);
 
   const currentBoard = useMemo(() => {
     for (const boards of Object.values(boardsByTeam)) {
@@ -142,6 +139,7 @@ function TaskBoardInner() {
   const doneTasks = tasks.filter(t => t.status === 'done').length;
   const progress  = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
   const teamNames = teamMembers.map(m => m.name);
+  const onlineNames = onlineUsers.map(user => user.name);
   const columnOptions = Object.entries(columns).map(([id, col]) => ({
     id,
     name: col.name,
@@ -195,7 +193,8 @@ function TaskBoardInner() {
     if (!sourceColId || !targetColId) { setActiveId(null); return; }
 
     if (sourceColId !== targetColId) {
-      // Status changed — persist to backend and emit real-time event.
+      // Status changed — persist to backend; useTasks' socket listener
+      // picks up the resulting task:updated broadcast for other clients.
       // Hiding the drag overlay (setActiveId) and the optimistic status move
       // (inside updateTask) must land in the same commit — otherwise the
       // overlay disappears in an urgent render first, flashing the real card
@@ -205,7 +204,6 @@ function TaskBoardInner() {
         setActiveId(null);
         updateTask(activeTaskId, { status: newStatus });
       });
-      socket.emit('update-tasks');
     } else {
       setActiveId(null);
       // Same-column reorder isn't persisted: tasks have no position field yet,
@@ -259,6 +257,7 @@ function TaskBoardInner() {
         subtitle={`${doneTasks} of ${tasks.length} done — you're on track.`}
         progress={progress}
         teamNames={teamNames}
+        onlineNames={onlineNames}
         hasTeammates={teamMembers.length > 1}
         onNewTask={() => setCreateColumnId('header')}
         searchQuery={searchQuery}
