@@ -39,12 +39,22 @@ export function Avatar({ name, size = 24, tone = undefined }: { name: string; si
   );
 }
 
-export function AvatarStack({ names, size = 22, max = 3 }: { names: string[]; size?: number; max?: number }) {
+export function AvatarStack({
+  names,
+  size = 22,
+  max = 3,
+  label: labelPrefix = "Assigned to",
+}: {
+  names: string[];
+  size?: number;
+  max?: number;
+  label?: string;
+}) {
   const shown = names.slice(0, max);
   const extra = names.length - shown.length;
   const label = extra > 0
-    ? `Assigned to ${shown.join(", ")} and ${extra} more`
-    : `Assigned to ${names.join(", ")}`;
+    ? `${labelPrefix} ${shown.join(", ")} and ${extra} more`
+    : `${labelPrefix} ${names.join(", ")}`;
 
   return (
     <div
