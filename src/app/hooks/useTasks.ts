@@ -1,7 +1,8 @@
 'use client';
 
-import { startTransition, useCallback, useOptimistic, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useAuthToken } from '../lib/auth/useAuthToken';
+import { useSocket } from '../lib/SocketContext';
 import {
   getTasksByBoard,
   createTask as apiCreateTask,
@@ -13,8 +14,10 @@ import {
   updateComment as apiUpdateComment,
   removeComment as apiRemoveComment,
   adaptBackendTask,
+  type BackendTask,
 } from '../lib/api/tasks';
 import type { Task, Status } from '@/types/task';
+import type { TaskDeletedPayload } from '../types/socket';
 
 // Fields the caller provides when creating a task
 export type CreateTaskFields = Pick<
@@ -86,6 +89,51 @@ export function useTasks(boardId: string | null) {
       setLoading(false);
     }
   }, [getToken, boardId]);
+
+  //  Realtime sync, join the board's room and merge broadcast task events
+  // into serverTasks. Upsert-by-id/filter-by-id makes this idempotent, so a
+  // broadcast echo of this client's own optimistic REST-driven change just
+  // re-applies harmlessly instead of duplicating or erroring.
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !boardId) return;
+
+    // Re-emitted on every (re)connect too. The server drops room membership
+    // on disconnect, so a network blip would otherwise silently stop updates.
+    const join = () => socket.emit('join-board', { boardId });
+
+    join();
+    socket.on('connect', join);
+
+    const upsertTask = (backendTask: BackendTask) => {
+      const incomingTask = adaptBackendTask(backendTask);
+
+      setServerTasks(prevTasks => {
+        const existingIndex = prevTasks.findIndex(existingTask => existingTask.id === incomingTask.id);
+        return existingIndex === -1
+          ? [...prevTasks, incomingTask]
+          : prevTasks.map(existingTask => (existingTask.id === incomingTask.id ? incomingTask : existingTask));
+      });
+    };
+
+    const removeTask = ({ id }: TaskDeletedPayload) => {
+      setServerTasks(prev => prev.filter(prevTask => prevTask.id !== id));
+    };
+
+    socket.on('task:created', upsertTask);
+    socket.on('task:updated', upsertTask);
+    socket.on('task:deleted', removeTask);
+
+    return () => {
+      socket.off('connect', join);
+      socket.off('task:created', upsertTask);
+      socket.off('task:updated', upsertTask);
+      socket.off('task:deleted', removeTask);
+      socket.emit('leave-board', { boardId });
+    };
+  }, [socket, boardId]);
 
   // Create
 
