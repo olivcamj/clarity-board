@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TaskService } from './task.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { TaskStatus, Priority } from '../../generated/client';
 
@@ -77,11 +78,18 @@ describe('TaskService', () => {
     },
   };
 
+  const mockRealtimeGateway = {
+    broadcastTaskCreated: jest.fn(),
+    broadcastTaskUpdated: jest.fn(),
+    broadcastTaskDeleted: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TaskService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: RealtimeGateway, useValue: mockRealtimeGateway },
       ],
     }).compile();
 
@@ -147,6 +155,10 @@ describe('TaskService', () => {
             createdById: 'user-1',
           }),
         }),
+      );
+      expect(mockRealtimeGateway.broadcastTaskCreated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ id: 'task-1' }),
       );
     });
 
@@ -244,6 +256,10 @@ describe('TaskService', () => {
           include: expect.any(Object),
         }),
       );
+      expect(mockRealtimeGateway.broadcastTaskUpdated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ title: 'Updated title' }),
+      );
     });
 
     it('should set assignees when assigneeIds is provided', async () => {
@@ -277,12 +293,18 @@ describe('TaskService', () => {
       expect(mockPrismaService.task.delete).toHaveBeenCalledWith({
         where: { id: 'task-1' },
       });
+      expect(mockRealtimeGateway.broadcastTaskDeleted).toHaveBeenCalledWith(
+        'board-1',
+        { id: 'task-1' },
+      );
     });
 
     it('should throw NotFoundException if task does not exist', async () => {
       mockPrismaService.task.findUnique.mockResolvedValueOnce(null);
 
       await expect(service.remove('bad-id')).rejects.toThrow(NotFoundException);
+      expect(mockPrismaService.task.delete).not.toHaveBeenCalled();
+      expect(mockRealtimeGateway.broadcastTaskDeleted).not.toHaveBeenCalled();
     });
   });
 
@@ -304,6 +326,10 @@ describe('TaskService', () => {
           position: 1,
         },
       });
+      expect(mockRealtimeGateway.broadcastTaskUpdated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ id: 'task-1' }),
+      );
     });
 
     it('should use position 0 for the first subtask on a task', async () => {
@@ -341,6 +367,10 @@ describe('TaskService', () => {
         where: { id: 'subtask-1' },
         data: { done: true },
       });
+      expect(mockRealtimeGateway.broadcastTaskUpdated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ id: 'task-1' }),
+      );
     });
 
     it('should throw NotFoundException if subtask does not exist', async () => {
@@ -371,6 +401,10 @@ describe('TaskService', () => {
       expect(mockPrismaService.subtask.delete).toHaveBeenCalledWith({
         where: { id: 'subtask-1' },
       });
+      expect(mockRealtimeGateway.broadcastTaskUpdated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ id: 'task-1' }),
+      );
     });
 
     it('should throw NotFoundException if subtask does not exist', async () => {
@@ -407,6 +441,10 @@ describe('TaskService', () => {
           authorId: 'user-1',
         },
       });
+      expect(mockRealtimeGateway.broadcastTaskUpdated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ id: 'task-1' }),
+      );
     });
 
     it('should set authorId to null for AI comments', async () => {
@@ -446,6 +484,10 @@ describe('TaskService', () => {
         where: { id: 'comment-1' },
         data: { text: 'Edited text' },
       });
+      expect(mockRealtimeGateway.broadcastTaskUpdated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ id: 'task-1' }),
+      );
     });
 
     it('should throw NotFoundException if comment does not exist', async () => {
@@ -507,6 +549,10 @@ describe('TaskService', () => {
       expect(mockPrismaService.taskComment.delete).toHaveBeenCalledWith({
         where: { id: 'comment-1' },
       });
+      expect(mockRealtimeGateway.broadcastTaskUpdated).toHaveBeenCalledWith(
+        'board-1',
+        expect.objectContaining({ id: 'task-1' }),
+      );
     });
 
     it('should throw NotFoundException if comment does not exist', async () => {

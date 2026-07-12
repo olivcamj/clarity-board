@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { TaskStatus, Priority } from '../../generated/client';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -15,7 +16,10 @@ import { TaskResponseDto, taskIncludes } from './dto/task-response.dto';
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtimeGateway: RealtimeGateway,
+  ) {}
 
   async findAllByBoard(boardId: string): Promise<TaskResponseDto[]> {
     await this.requireBoard(boardId);
@@ -61,7 +65,9 @@ export class TaskService {
       include: taskIncludes,
     });
 
-    return TaskResponseDto.fromPrisma(task);
+    const result = TaskResponseDto.fromPrisma(task);
+    this.realtimeGateway.broadcastTaskCreated(result.boardId, result);
+    return result;
   }
 
   async findOne(id: string): Promise<TaskResponseDto> {
@@ -98,12 +104,20 @@ export class TaskService {
       include: taskIncludes,
     });
 
-    return TaskResponseDto.fromPrisma(task);
+    const result = TaskResponseDto.fromPrisma(task);
+    this.realtimeGateway.broadcastTaskUpdated(result.boardId, result);
+    return result;
   }
 
   async remove(id: string): Promise<{ message: string }> {
-    await this.requireTask(id);
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+      select: { boardId: true },
+    });
+    if (!task) throw new NotFoundException(`Task ${id} not found`);
+
     await this.prisma.task.delete({ where: { id } });
+    this.realtimeGateway.broadcastTaskDeleted(task.boardId, { id });
     return { message: 'Task deleted successfully' };
   }
 
@@ -123,7 +137,7 @@ export class TaskService {
       data: { taskId, text: dto.text, done: dto.done ?? false, position },
     });
 
-    return this.findOne(taskId);
+    return this.findOneAndBroadcastUpdate(taskId);
   }
 
   async updateSubtask(
@@ -149,7 +163,7 @@ export class TaskService {
       },
     });
 
-    return this.findOne(taskId);
+    return this.findOneAndBroadcastUpdate(taskId);
   }
 
   async removeSubtask(
@@ -166,7 +180,7 @@ export class TaskService {
     }
 
     await this.prisma.subtask.delete({ where: { id: subtaskId } });
-    return this.findOne(taskId);
+    return this.findOneAndBroadcastUpdate(taskId);
   }
 
   async addComment(
@@ -185,7 +199,7 @@ export class TaskService {
       },
     });
 
-    return this.findOne(taskId);
+    return this.findOneAndBroadcastUpdate(taskId);
   }
 
   async updateComment(
@@ -210,7 +224,7 @@ export class TaskService {
       where: { id: commentId },
       data: { text: dto.text },
     });
-    return this.findOne(taskId);
+    return this.findOneAndBroadcastUpdate(taskId);
   }
 
   async removeComment(
@@ -231,7 +245,7 @@ export class TaskService {
     }
 
     await this.prisma.taskComment.delete({ where: { id: commentId } });
-    return this.findOne(taskId);
+    return this.findOneAndBroadcastUpdate(taskId);
   }
 
   private async requireBoard(boardId: string): Promise<void> {
@@ -244,5 +258,11 @@ export class TaskService {
   private async requireTask(id: string): Promise<void> {
     const task = await this.prisma.task.findUnique({ where: { id } });
     if (!task) throw new NotFoundException(`Task ${id} not found`);
+  }
+
+  private async findOneAndBroadcastUpdate(taskId: string): Promise<TaskResponseDto> {
+    const dto = await this.findOne(taskId);
+    this.realtimeGateway.broadcastTaskUpdated(dto.boardId, dto);
+    return dto;
   }
 }
