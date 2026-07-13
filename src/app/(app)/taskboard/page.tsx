@@ -18,6 +18,7 @@ import { useBoardPresence } from '../../hooks/useBoardPresence';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { useAuthToken } from '../../lib/auth/useAuthToken';
 import { getTeamMembers, type TeamMember } from '../../lib/api/teams';
+import { getBoard } from '../../lib/api/boards';
 import type { Task, Status } from '@/types/task';
 
 function currentWeekRange(): string {
@@ -107,15 +108,23 @@ function TaskBoardInner() {
     if (boardId) fetchTasks();
   }, [boardId, fetchTasks]);
 
-  // Find which team owns this board, then fetch its members
+  // Fetch the board's own teamId directly rather than reverse-scanning
+  // boardsByTeam — that client-side cache only reflects teams the user
+  // belonged to as of the last WorkspaceContext fetch, so it silently misses
+  // a team joined (e.g. via an invite link) since then, leaving this stuck
+  // on an empty member list with no error.
   useEffect(() => {
     if (!boardId) return;
-    const teamId = Object.keys(boardsByTeam).find(teamId =>
-      boardsByTeam[teamId].some(board => board.id === boardId)
-    );
-    if (!teamId) return;
-    getToken().then(token => getTeamMembers(token, teamId)).then(setTeamMembers).catch(() => {});
-  }, [boardId, boardsByTeam, getToken]);
+    let cancelled = false;
+    (async () => {
+      const token = await getToken();
+      const board = await getBoard(token, boardId);
+      if (cancelled) return;
+      const members = await getTeamMembers(token, board.teamId);
+      if (!cancelled) setTeamMembers(members);
+    })().catch(() => {});
+    return () => { cancelled = true; };
+  }, [boardId, getToken]);
 
   // Auto-dismiss operation errors after 4 seconds
   useEffect(() => {
@@ -138,7 +147,11 @@ function TaskBoardInner() {
   // Header derived data
   const doneTasks = tasks.filter(t => t.status === 'done').length;
   const progress  = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
-  const teamNames = teamMembers.map(m => m.name);
+  // Team roster + presence render as two separate avatar stacks in the header
+  // show only offline teammates in the roster stack, or the two would show
+  // the same people twice whenever everyone happens to be online.
+  const onlineIds = new Set(onlineUsers.map(user => user.id));
+  const teamNames = teamMembers.filter(member => !onlineIds.has(member.id)).map(m => m.name);
   const onlineNames = onlineUsers.map(user => user.name);
   const columnOptions = Object.entries(columns).map(([id, col]) => ({
     id,
