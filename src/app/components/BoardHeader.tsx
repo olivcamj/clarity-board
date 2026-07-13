@@ -89,9 +89,10 @@ export function BoardHeader({
             <AvatarStack names={onlineNames} size={28} max={4} label="Online now" />
           )}
 
-          {/* Team avatars */}
+          {/* Team avatars — offline teammates only; online ones are already
+              shown in the "Online now" stack above. */}
           {teamNames.length > 0 && (
-            <AvatarStack names={teamNames} size={28} max={4} />
+            <AvatarStack names={teamNames} size={28} max={4} label="Offline" />
           )}
 
           {/* New task */}
