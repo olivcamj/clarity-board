@@ -45,10 +45,33 @@ export interface MemberJoinedPayload {
   member: TeamMemberDto;
 }
 
+export interface ViewTaskPayload {
+  taskId: string;
+  boardId: string;
+}
+
+export interface LeaveTaskPayload {
+  taskId: string;
+}
+
+export interface TaskViewersUpdatePayload {
+  taskId: string;
+  users: PresenceUser[];
+}
+
+export interface TaskActivityPayload {
+  type: 'created' | 'updated' | 'deleted';
+  taskId: string;
+  taskTitle: string;
+  boardId: string;
+  actor: PresenceUser;
+}
+
 // Augments socket.data: set once at handshake by the auth middleware,
 // read by the join/leave/disconnect handlers.
 export interface SocketData {
   user?: PresenceUser;
   boardIds?: Set<string>;
   teamIds?: Set<string>;
+  viewingTaskId?: string;
 }
