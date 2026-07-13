@@ -8,12 +8,14 @@ import { MemberRole } from '../../generated/client';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { TeamResponseDto } from './dto/team-response.dto';
 import { WorkspaceService } from '../workspace/workspace.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
 export class TeamService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspaceService: WorkspaceService,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
   async createTeam(
@@ -156,6 +158,17 @@ export class TeamService {
       where: { token },
       data: { usedAt: new Date() },
     });
+
+    const joinedUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true },
+    });
+    if (joinedUser) {
+      this.realtimeGateway.broadcastMemberJoined(invite.teamId, {
+        ...joinedUser,
+        role: invite.role,
+      });
+    }
 
     return {
       teamId: invite.teamId,
