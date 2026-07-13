@@ -15,10 +15,13 @@ import { UserService } from '../user/user.service';
 import { TaskResponseDto } from '../task/dto/task-response.dto';
 import type {
   JoinBoardPayload,
+  JoinTeamPayload,
   LeaveBoardPayload,
+  LeaveTeamPayload,
   PresenceUser,
   SocketData,
   TaskDeletedPayload,
+  TeamMemberDto,
 } from './types';
 
 type AppSocket = Socket & { data: SocketData };
@@ -61,6 +64,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
       const dbUser = await this.userService.getUserByClerkId(payload.sub);
       socket.data.user = { id: dbUser.id, name: dbUser.name ?? '' };
       socket.data.boardIds = new Set<string>();
+      socket.data.teamIds = new Set<string>();
       next();
     } catch {
       next(new Error('Unauthorized'));
@@ -103,6 +107,40 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.broadcastPresence(boardId);
   }
 
+  @SubscribeMessage('join-team')
+  async handleJoinTeam(
+    @ConnectedSocket() socket: AppSocket,
+    @MessageBody() payload: JoinTeamPayload,
+  ): Promise<void> {
+    const user = socket.data.user;
+    const teamId = payload?.teamId;
+    const teamIds = socket.data.teamIds;
+    if (!user || !teamId || !teamIds) return;
+
+    // Idempotent for the same reason join-board is: StrictMode double-invokes
+    // effects in dev, so the client may emit join-team twice for the same team.
+    if (teamIds.has(teamId)) return;
+
+    const allowed = await this.isMemberOfTeam(user.id, teamId);
+    if (!allowed) return; // silent refusal no error event in the contract
+
+    await socket.join(this.teamRoom(teamId));
+    teamIds.add(teamId);
+  }
+
+  @SubscribeMessage('leave-team')
+  handleLeaveTeam(
+    @ConnectedSocket() socket: AppSocket,
+    @MessageBody() payload: LeaveTeamPayload,
+  ): void {
+    const teamId = payload?.teamId;
+    const teamIds = socket.data.teamIds;
+    if (!teamId || !teamIds?.has(teamId)) return;
+
+    socket.leave(this.teamRoom(teamId));
+    teamIds.delete(teamId);
+  }
+
   handleDisconnect(socket: AppSocket): void {
     const boardIds = socket.data.boardIds;
     if (!boardIds) return;
@@ -126,8 +164,28 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.server.to(this.room(boardId)).emit('task:deleted', payload);
   }
 
+  broadcastMemberJoined(teamId: string, member: TeamMemberDto): void {
+    this.server
+      .to(this.teamRoom(teamId))
+      .emit('member:joined', { teamId, member });
+  }
+
   private room(boardId: string): string {
     return `board:${boardId}`;
+  }
+
+  private teamRoom(teamId: string): string {
+    return `team:${teamId}`;
+  }
+
+  private async isMemberOfTeam(
+    userId: string,
+    teamId: string,
+  ): Promise<boolean> {
+    const membership = await this.prisma.teamMembership.findUnique({
+      where: { userId_teamId: { userId, teamId } },
+    });
+    return !!membership;
   }
 
   private async isTeamMember(
