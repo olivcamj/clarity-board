@@ -649,7 +649,7 @@ export function TaskModal({
                 )}
                 <form onSubmit={handleCommentSubmit} className="border border-chalk rounded-[10px] bg-bone overflow-hidden">
                   <div className="flex items-start gap-[10px] px-[14px] py-[12px]">
-                    <Avatar name="Mira Cho" size={28} />
+                    <Avatar name={currentUserId ? resolveMember(currentUserId, teamMembers) : 'You'} size={28} />
                     <textarea
                       aria-label="Add a comment"
                       placeholder="Add a comment — @ to mention, / for commands"
