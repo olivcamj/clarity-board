@@ -3,9 +3,10 @@ import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
 import { TeamMemberGuard } from '../guards/team-member.guard';
 import { UserModule } from '../user/user.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
-  imports: [UserModule],
+  imports: [UserModule, RealtimeModule],
   controllers: [TaskController],
   providers: [TaskService, TeamMemberGuard],
   exports: [TaskService],

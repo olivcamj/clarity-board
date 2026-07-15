@@ -185,7 +185,7 @@ export function DemoTaskboardClient({
         boardName={boardName}
         subtitle={`${doneTasks} of ${tasks.length} done — you're on track.`}
         progress={progress}
-        teamNames={teamNames}
+        teamPresence={teamNames.map(name => ({ name, online: false }))}
         onNewTask={() => setCreateColumnId('header')}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

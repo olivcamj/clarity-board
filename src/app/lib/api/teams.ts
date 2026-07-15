@@ -69,3 +69,9 @@ export function joinViaInvite(token: string, inviteToken: string): Promise<JoinR
     body: JSON.stringify({ token: inviteToken }),
   });
 }
+
+export function removeTeamMember(token: string, teamId: string, userId: string): Promise<unknown> {
+  return apiClient<unknown>(`api/team/${teamId}/users/${userId}`, token, {
+    method: 'DELETE',
+  });
+}

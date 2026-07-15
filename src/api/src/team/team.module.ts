@@ -6,9 +6,10 @@ import { TeamMemberGuard } from '../guards/team-member.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 import { UserModule } from '../user/user.module';
 import { WorkspaceModule } from '../workspace/workspace.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, WorkspaceModule],
+  imports: [PrismaModule, UserModule, WorkspaceModule, RealtimeModule],
   providers: [TeamService, ClerkAuthGuard, TeamMemberGuard],
   controllers: [TeamController],
   exports: [TeamService],

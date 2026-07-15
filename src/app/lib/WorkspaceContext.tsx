@@ -22,7 +22,7 @@ interface WorkspaceContextValue {
   workspaceName: string;
   updateWorkspaceName: (name: string) => void;
   workspaceRole: WorkspaceRole | null;
-  teams: Array<{ id: string; name: string }>;
+  teams: Array<{ id: string; name: string; role: string; workspaceId: string | null }>;
   boardsByTeam: Record<string, Board[]>;
   loading: boolean;
   error: string | null;

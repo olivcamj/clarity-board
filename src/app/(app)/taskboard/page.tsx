@@ -15,9 +15,12 @@ import { Icon } from '../../ui/Icon';
 import { LABELS, PEOPLE_BY_ID } from '../../data/labels';
 import { useTasks } from '../../hooks/useTasks';
 import { useBoardPresence } from '../../hooks/useBoardPresence';
+import { useTaskViewers } from '../../hooks/useTaskViewers';
+import { useTaskActivityToasts } from '../../hooks/useTaskActivityToasts';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { useAuthToken } from '../../lib/auth/useAuthToken';
 import { getTeamMembers, type TeamMember } from '../../lib/api/teams';
+import { getBoard } from '../../lib/api/boards';
 import type { Task, Status } from '@/types/task';
 
 function currentWeekRange(): string {
@@ -87,6 +90,7 @@ function TaskBoardInner() {
   const { boardsByTeam, user } = useWorkspace();
   const getToken = useAuthToken();
   const onlineUsers = useBoardPresence(boardId);
+  useTaskActivityToasts(boardId, user?.id ?? null);
 
   const currentBoard = useMemo(() => {
     for (const boards of Object.values(boardsByTeam)) {
@@ -107,15 +111,23 @@ function TaskBoardInner() {
     if (boardId) fetchTasks();
   }, [boardId, fetchTasks]);
 
-  // Find which team owns this board, then fetch its members
+  // Fetch the board's own teamId directly rather than reverse-scanning
+  // boardsByTeam — that client-side cache only reflects teams the user
+  // belonged to as of the last WorkspaceContext fetch, so it silently misses
+  // a team joined (e.g. via an invite link) since then, leaving this stuck
+  // on an empty member list with no error.
   useEffect(() => {
     if (!boardId) return;
-    const teamId = Object.keys(boardsByTeam).find(teamId =>
-      boardsByTeam[teamId].some(board => board.id === boardId)
-    );
-    if (!teamId) return;
-    getToken().then(token => getTeamMembers(token, teamId)).then(setTeamMembers).catch(() => {});
-  }, [boardId, boardsByTeam, getToken]);
+    let cancelled = false;
+    (async () => {
+      const token = await getToken();
+      const board = await getBoard(token, boardId);
+      if (cancelled) return;
+      const members = await getTeamMembers(token, board.teamId);
+      if (!cancelled) setTeamMembers(members);
+    })().catch(() => {});
+    return () => { cancelled = true; };
+  }, [boardId, getToken]);
 
   // Auto-dismiss operation errors after 4 seconds
   useEffect(() => {
@@ -134,12 +146,19 @@ function TaskBoardInner() {
   const selectedTask = selectedTaskId
     ? tasks.find(t => t.id === selectedTaskId) ?? null
     : null;
+  const taskViewers = useTaskViewers(selectedTaskId, boardId);
 
   // Header derived data
   const doneTasks = tasks.filter(t => t.status === 'done').length;
   const progress  = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
-  const teamNames = teamMembers.map(m => m.name);
-  const onlineNames = onlineUsers.map(user => user.name);
+  // One roster in the header, presence shown via a dot per avatar rather than
+  // two separate stacks (which duplicated people whenever everyone was
+  // online). Online members sort first so they aren't pushed out of the
+  // stack's visible "max" by offline teammates.
+  const onlineIds = new Set(onlineUsers.map(user => user.id));
+  const teamPresence = [...teamMembers]
+    .sort((a, b) => Number(onlineIds.has(b.id)) - Number(onlineIds.has(a.id)))
+    .map(member => ({ name: member.name, online: onlineIds.has(member.id) }));
   const columnOptions = Object.entries(columns).map(([id, col]) => ({
     id,
     name: col.name,
@@ -256,8 +275,7 @@ function TaskBoardInner() {
         boardName={currentBoard?.name ?? 'The Board'}
         subtitle={`${doneTasks} of ${tasks.length} done — you're on track.`}
         progress={progress}
-        teamNames={teamNames}
-        onlineNames={onlineNames}
+        teamPresence={teamPresence}
         hasTeammates={teamMembers.length > 1}
         onNewTask={() => setCreateColumnId('header')}
         searchQuery={searchQuery}
@@ -390,6 +408,7 @@ function TaskBoardInner() {
           onEditComment={(commentId, text) => editComment(selectedTask.id, commentId, text)}
           onRemoveComment={(commentId) => removeComment(selectedTask.id, commentId)}
           currentUserId={user?.id}
+          viewers={taskViewers}
         />
       )}
 

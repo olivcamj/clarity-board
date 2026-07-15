@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { TopBar } from '../../components/TopBar';
 import { Avatar } from '../../ui/Avatar';
+import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { useAuthToken } from '../../lib/auth/useAuthToken';
 import { getTeamMembers, type TeamMember } from '../../lib/api/teams';
@@ -13,6 +16,7 @@ export default function PeoplePage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const isAdmin = teams.some(team => team.role === 'ADMIN');
 
   useEffect(() => {
     if (!teams.length) return;
@@ -41,9 +45,19 @@ export default function PeoplePage() {
     <div className="min-h-screen" style={{ background: 'var(--paper)' }}>
       <TopBar title="People" searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <div className="px-[40px] py-[40px]">
-        <div className="mb-[24px]">
-          <p className="font-mono text-[10px] text-ash tracking-[0.1em] uppercase mb-[6px]">Workspace</p>
-          <h1 className="font-display text-[38px] font-normal text-ink leading-[1.1] m-0">People</h1>
+        <div className="flex items-start justify-between mb-[24px]">
+          <div>
+            <p className="font-mono text-[10px] text-ash tracking-[0.1em] uppercase mb-[6px]">Workspace</p>
+            <h1 className="font-display text-[38px] font-normal text-ink leading-[1.1] m-0">People</h1>
+          </div>
+          {isAdmin && (
+            <Link href="/settings?section=members" className="no-underline">
+              <Button type="button" variant="ghost" size="sm">
+                <Icon name="settings" size={13} color="var(--ash)" />
+                Manage members
+              </Button>
+            </Link>
+          )}
         </div>
 
         {loading ? (

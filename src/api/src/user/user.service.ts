@@ -30,11 +30,18 @@ export class UserService {
       where: { clerkId },
     });
 
-    if (user) {
+    if (user && user.name) {
       return new UserResponseDto(user);
     }
 
-    console.log(`⚠️ User ${clerkId} not in database, syncing from Clerk...`);
+    // No record yet, or a name-less record from an initial sync that never
+    // got a follow-up webhook (e.g. Clerk can't reach a local dev server) —
+    // fetch the current profile from Clerk directly rather than staying stale.
+    console.log(
+      user
+        ? `⚠️ User ${clerkId} has no name on record, re-syncing from Clerk...`
+        : `⚠️ User ${clerkId} not in database, syncing from Clerk...`,
+    );
     return await this.syncUserById(clerkId);
   }
 
