@@ -15,6 +15,8 @@ import { Icon } from '../../ui/Icon';
 import { LABELS, PEOPLE_BY_ID } from '../../data/labels';
 import { useTasks } from '../../hooks/useTasks';
 import { useBoardPresence } from '../../hooks/useBoardPresence';
+import { useTaskViewers } from '../../hooks/useTaskViewers';
+import { useTaskActivityToasts } from '../../hooks/useTaskActivityToasts';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { useAuthToken } from '../../lib/auth/useAuthToken';
 import { getTeamMembers, type TeamMember } from '../../lib/api/teams';
@@ -88,6 +90,7 @@ function TaskBoardInner() {
   const { boardsByTeam, user } = useWorkspace();
   const getToken = useAuthToken();
   const onlineUsers = useBoardPresence(boardId);
+  useTaskActivityToasts(boardId, user?.id ?? null);
 
   const currentBoard = useMemo(() => {
     for (const boards of Object.values(boardsByTeam)) {
@@ -143,16 +146,19 @@ function TaskBoardInner() {
   const selectedTask = selectedTaskId
     ? tasks.find(t => t.id === selectedTaskId) ?? null
     : null;
+  const taskViewers = useTaskViewers(selectedTaskId, boardId);
 
   // Header derived data
   const doneTasks = tasks.filter(t => t.status === 'done').length;
   const progress  = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0;
-  // Team roster + presence render as two separate avatar stacks in the header
-  // show only offline teammates in the roster stack, or the two would show
-  // the same people twice whenever everyone happens to be online.
+  // One roster in the header, presence shown via a dot per avatar rather than
+  // two separate stacks (which duplicated people whenever everyone was
+  // online). Online members sort first so they aren't pushed out of the
+  // stack's visible "max" by offline teammates.
   const onlineIds = new Set(onlineUsers.map(user => user.id));
-  const teamNames = teamMembers.filter(member => !onlineIds.has(member.id)).map(m => m.name);
-  const onlineNames = onlineUsers.map(user => user.name);
+  const teamPresence = [...teamMembers]
+    .sort((a, b) => Number(onlineIds.has(b.id)) - Number(onlineIds.has(a.id)))
+    .map(member => ({ name: member.name, online: onlineIds.has(member.id) }));
   const columnOptions = Object.entries(columns).map(([id, col]) => ({
     id,
     name: col.name,
@@ -269,8 +275,7 @@ function TaskBoardInner() {
         boardName={currentBoard?.name ?? 'The Board'}
         subtitle={`${doneTasks} of ${tasks.length} done — you're on track.`}
         progress={progress}
-        teamNames={teamNames}
-        onlineNames={onlineNames}
+        teamPresence={teamPresence}
         hasTeammates={teamMembers.length > 1}
         onNewTask={() => setCreateColumnId('header')}
         searchQuery={searchQuery}
@@ -403,6 +408,7 @@ function TaskBoardInner() {
           onEditComment={(commentId, text) => editComment(selectedTask.id, commentId, text)}
           onRemoveComment={(commentId) => removeComment(selectedTask.id, commentId)}
           currentUserId={user?.id}
+          viewers={taskViewers}
         />
       )}
 
