@@ -1,7 +1,8 @@
 'use client';
 
-import { startTransition, useCallback, useOptimistic, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useAuthToken } from '../lib/auth/useAuthToken';
+import { useSocket } from '../lib/SocketContext';
 import {
   getTasksByBoard,
   createTask as apiCreateTask,
@@ -9,12 +10,15 @@ import {
   deleteTask as apiDeleteTask,
   updateSubtask as apiUpdateSubtask,
   addSubtask as apiAddSubtask,
+  removeSubtask as apiRemoveSubtask,
   addComment as apiAddComment,
   updateComment as apiUpdateComment,
   removeComment as apiRemoveComment,
   adaptBackendTask,
+  type BackendTask,
 } from '../lib/api/tasks';
 import type { Task, Status } from '@/types/task';
+import type { TaskDeletedPayload } from '../types/socket';
 
 // Fields the caller provides when creating a task
 export type CreateTaskFields = Pick<
@@ -32,7 +36,7 @@ const UPDATABLE_TASK_FIELDS = [
 type OptimisticPatch =
   | { type: 'update'; id: string; changes: Partial<Task> }
   | { type: 'delete'; id: string }
-  | { type: 'toggleSubtask'; taskId: string; subtaskId: string };
+  | { type: 'toggleSubtask'; taskId: string; subtaskId: string; done: boolean };
 
 function applyPatch(state: Task[], patch: OptimisticPatch): Task[] {
   switch (patch.type) {
@@ -41,11 +45,18 @@ function applyPatch(state: Task[], patch: OptimisticPatch): Task[] {
     case 'delete':
       return state.filter(task => task.id !== patch.id);
     case 'toggleSubtask':
+      // An explicit target (not "!subtask.done") so re-applying this patch is
+      // idempotent. The subtask endpoint broadcasts task:updated to the whole
+      // board room, including the toggling client's own socket — if that
+      // broadcast lands in serverTasks while this optimistic transition is
+      // still pending, React re-runs this reducer against the new base state.
+      // A relative flip would re-toggle an already-correct value back to
+      // wrong (checked → unchecked → checked flicker); a fixed target won't.
       return state.map(task =>
         task.id !== patch.taskId ? task : {
           ...task,
           subtasks: (task.subtasks ?? []).map(subtask =>
-            subtask.id === patch.subtaskId ? { ...subtask, done: !subtask.done } : subtask
+            subtask.id === patch.subtaskId ? { ...subtask, done: patch.done } : subtask
           ),
         }
       );
@@ -86,6 +97,51 @@ export function useTasks(boardId: string | null) {
       setLoading(false);
     }
   }, [getToken, boardId]);
+
+  //  Realtime sync, join the board's room and merge broadcast task events
+  // into serverTasks. Upsert-by-id/filter-by-id makes this idempotent, so a
+  // broadcast echo of this client's own optimistic REST-driven change just
+  // re-applies harmlessly instead of duplicating or erroring.
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !boardId) return;
+
+    // Re-emitted on every (re)connect too. The server drops room membership
+    // on disconnect, so a network blip would otherwise silently stop updates.
+    const join = () => socket.emit('join-board', { boardId });
+
+    join();
+    socket.on('connect', join);
+
+    const upsertTask = (backendTask: BackendTask) => {
+      const incomingTask = adaptBackendTask(backendTask);
+
+      setServerTasks(prevTasks => {
+        const existingIndex = prevTasks.findIndex(existingTask => existingTask.id === incomingTask.id);
+        return existingIndex === -1
+          ? [...prevTasks, incomingTask]
+          : prevTasks.map(existingTask => (existingTask.id === incomingTask.id ? incomingTask : existingTask));
+      });
+    };
+
+    const removeTask = ({ id }: TaskDeletedPayload) => {
+      setServerTasks(prev => prev.filter(prevTask => prevTask.id !== id));
+    };
+
+    socket.on('task:created', upsertTask);
+    socket.on('task:updated', upsertTask);
+    socket.on('task:deleted', removeTask);
+
+    return () => {
+      socket.off('connect', join);
+      socket.off('task:created', upsertTask);
+      socket.off('task:updated', upsertTask);
+      socket.off('task:deleted', removeTask);
+      socket.emit('leave-board', { boardId });
+    };
+  }, [socket, boardId]);
 
   // Create
 
@@ -133,8 +189,20 @@ export function useTasks(boardId: string | null) {
           finalTask = adaptBackendTask(latestBackend);
         }
 
-        // Replace the temp entry with the real task
-        setServerTasks(prev => prev.map(task => (task.id === tempId ? finalTask : task)));
+        // Replace the temp entry with the real task. Upsert-by-real-id rather
+        // than a plain map-by-tempId: the server broadcasts task:created to
+        // the whole board room, including the creator's own socket, so if
+        // that broadcast's upsertTask (below) wins the race and already
+        // appended an entry under the real id before this REST response
+        // lands, a plain tempId→finalTask replace would leave two entries
+        // with the same real id — the exact "two identical cards" bug.
+        setServerTasks(prev => {
+          const withoutTemp = prev.filter(task => task.id !== tempId);
+          const existingIndex = withoutTemp.findIndex(task => task.id === finalTask.id);
+          return existingIndex === -1
+            ? [...withoutTemp, finalTask]
+            : withoutTemp.map(task => (task.id === finalTask.id ? finalTask : task));
+        });
         return finalTask;
       } catch (err) {
         setServerTasks(prev => prev.filter(task => task.id !== tempId));
@@ -171,7 +239,39 @@ export function useTasks(boardId: string | null) {
             delete payload.assignees;
           }
           const updated = await apiUpdateTask(token, taskId, payload);
-          const result = adaptBackendTask(updated);
+          let latestBackend = updated;
+
+          // UpdateTaskDto deliberately excludes subtasks — they're a related
+          // child model with their own endpoints, not a field on the task
+          // itself. So subtask adds/removes/edits made in the draft have to
+          // be diffed against what the server had before this save and
+          // replayed through addSubtask/updateSubtask/removeSubtask, or
+          // they'd silently vanish the moment this response overwrites the
+          // optimistic view (the "subtask disappears after a few seconds" bug).
+          if (updates.subtasks) {
+            const existingSubtasks = previousServer.find(task => task.id === taskId)?.subtasks ?? [];
+            const existingById = new Map(existingSubtasks.map(subtask => [subtask.id, subtask]));
+            const nextById = new Map(updates.subtasks.map(subtask => [subtask.id, subtask]));
+
+            for (const subtask of updates.subtasks) {
+              if (!existingById.has(subtask.id)) {
+                latestBackend = await apiAddSubtask(token, taskId, { text: subtask.text, done: subtask.done });
+              }
+            }
+            for (const subtask of existingSubtasks) {
+              if (!nextById.has(subtask.id)) {
+                latestBackend = await apiRemoveSubtask(token, taskId, subtask.id);
+              }
+            }
+            for (const subtask of updates.subtasks) {
+              const previous = existingById.get(subtask.id);
+              if (previous && (previous.text !== subtask.text || previous.done !== subtask.done)) {
+                latestBackend = await apiUpdateSubtask(token, taskId, subtask.id, { text: subtask.text, done: subtask.done });
+              }
+            }
+          }
+
+          const result = adaptBackendTask(latestBackend);
           setServerTasks(prev => prev.map(task => (task.id === taskId ? result : task)));
         } catch (err) {
           setServerTasks(previousServer);
@@ -228,11 +328,12 @@ export function useTasks(boardId: string | null) {
         const subtask = task?.subtasks?.find(subtask => subtask.id === subtaskId);
         if (!subtask) return;
 
-        applyOptimistic({ type: 'toggleSubtask', taskId, subtaskId });
+        const nextDone = !subtask.done;
+        applyOptimistic({ type: 'toggleSubtask', taskId, subtaskId, done: nextDone });
         try {
           const token = await getToken();
           const updated = await apiUpdateSubtask(token, taskId, subtaskId, {
-            done: !subtask.done,
+            done: nextDone,
           });
           setServerTasks(prev =>
             prev.map(task => (task.id === taskId ? adaptBackendTask(updated) : task))

@@ -20,8 +20,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <Link href="/demo/dashboard">
               <Button variant="ghost" size="sm">View demo</Button>
             </Link>
-            {/* @ts-expect-error asChild works at runtime but not yet typed in this Clerk version */}
-            <SignInButton asChild>
+            <SignInButton>
               <Button variant="outline" size="sm">Sign in</Button>
             </SignInButton>
           </Show>

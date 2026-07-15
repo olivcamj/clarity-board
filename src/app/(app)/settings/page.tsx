@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { SegmentedControl } from '../../ui/SegmentedControl';
@@ -9,6 +10,7 @@ import { Toggle } from '../../ui/Toggle';
 import { TopBar } from '../../components/TopBar';
 import { useWorkspace } from '../../lib/WorkspaceContext';
 import { useTheme, type ColorTheme } from '../../lib/ThemeContext';
+import { MembersSettings } from './MembersSettings';
 
 type SettingsSection = 'general' | 'members' | 'clarity-ai' | 'billing' | 'danger-zone';
 type DefaultView     = 'board' | 'table' | 'list';
@@ -184,7 +186,7 @@ function PlaceholderPanel({ title }: { title: string }) {
 
 const SECTION_PANELS: Record<SettingsSection, ReactNode> = {
   'general':     <GeneralSettings />,
-  'members':     <PlaceholderPanel title="Members" />,
+  'members':     <MembersSettings />,
   'clarity-ai':  <PlaceholderPanel title="Clarity AI" />,
   'billing':     <PlaceholderPanel title="Billing" />,
   'danger-zone': <PlaceholderPanel title="Danger zone" />,
@@ -192,8 +194,18 @@ const SECTION_PANELS: Record<SettingsSection, ReactNode> = {
 
 // ── Page ──────────────────────────────────────────────────────────
 
-export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+const SECTION_IDS = SETTINGS_SECTIONS.map(section => section.id);
+
+function isSettingsSection(value: string | null): value is SettingsSection {
+  return SECTION_IDS.includes(value as SettingsSection);
+}
+
+function SettingsPageInner() {
+  const searchParams = useSearchParams();
+  const requestedSection = searchParams.get('section');
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    isSettingsSection(requestedSection) ? requestedSection : 'general'
+  );
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
@@ -253,5 +265,17 @@ export default function SettingsPage() {
           </main>
         </div>
       </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--paper)' }}>
+        <p className="font-ui text-smoke text-sm">Loading…</p>
+      </div>
+    }>
+      <SettingsPageInner />
+    </Suspense>
   );
 }

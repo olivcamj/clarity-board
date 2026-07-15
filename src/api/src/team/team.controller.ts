@@ -17,7 +17,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { TeamRoles } from 'src/common/decorators/team-roles.decorator';
 import { ResourceContext } from 'src/common/decorators/resource-type.decorator';
 import { MemberRole } from '../../generated/client';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 
 class CreateInviteDto {
   @IsEnum(MemberRole)
@@ -25,6 +25,7 @@ class CreateInviteDto {
 }
 
 class JoinViaInviteDto {
+  @IsString()
   token!: string;
 }
 

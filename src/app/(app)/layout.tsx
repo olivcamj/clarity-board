@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { AppFrame } from '../components/AppFrame';
 import { WorkspaceProvider } from '../lib/WorkspaceContext';
+import { SocketProvider } from '../lib/SocketContext';
+import { ToastProvider } from '../lib/ToastContext';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sidebarOpenCookie = (await cookies()).get('sidebar-open')?.value;
@@ -10,7 +12,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <Suspense>
       <WorkspaceProvider>
-        <AppFrame initialSidebarOpen={initialSidebarOpen}>{children}</AppFrame>
+        <SocketProvider>
+          <ToastProvider>
+            <AppFrame initialSidebarOpen={initialSidebarOpen}>{children}</AppFrame>
+          </ToastProvider>
+        </SocketProvider>
       </WorkspaceProvider>
     </Suspense>
   );
