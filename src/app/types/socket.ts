@@ -48,12 +48,36 @@ export interface MemberJoinedPayload {
   member: TeamMemberDto;
 }
 
+export interface ViewTaskPayload {
+  taskId: string;
+  boardId: string;
+}
+
+export interface LeaveTaskPayload {
+  taskId: string;
+}
+
+export interface TaskViewersUpdatePayload {
+  taskId: string;
+  users: PresenceUser[];
+}
+
+export interface TaskActivityPayload {
+  type: 'created' | 'updated' | 'deleted';
+  taskId: string;
+  taskTitle: string;
+  boardId: string;
+  actor: PresenceUser;
+}
+
 export interface ServerToClientEvents {
   'task:created': (task: BackendTask) => void;
   'task:updated': (task: BackendTask) => void;
   'task:deleted': (payload: TaskDeletedPayload) => void;
   'presence:update': (payload: PresenceUpdatePayload) => void;
   'member:joined': (payload: MemberJoinedPayload) => void;
+  'task-viewers:update': (payload: TaskViewersUpdatePayload) => void;
+  'task:activity': (payload: TaskActivityPayload) => void;
 }
 
 export interface ClientToServerEvents {
@@ -61,4 +85,6 @@ export interface ClientToServerEvents {
   'leave-board': (payload: LeaveBoardPayload) => void;
   'join-team': (payload: JoinTeamPayload) => void;
   'leave-team': (payload: LeaveTeamPayload) => void;
+  'view-task': (payload: ViewTaskPayload) => void;
+  'leave-task': (payload: LeaveTaskPayload) => void;
 }
