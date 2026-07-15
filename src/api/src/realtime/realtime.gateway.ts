@@ -17,11 +17,14 @@ import type {
   JoinBoardPayload,
   JoinTeamPayload,
   LeaveBoardPayload,
+  LeaveTaskPayload,
   LeaveTeamPayload,
   PresenceUser,
   SocketData,
+  TaskActivityPayload,
   TaskDeletedPayload,
   TeamMemberDto,
+  ViewTaskPayload,
 } from './types';
 
 type AppSocket = Socket & { data: SocketData };
@@ -141,14 +144,61 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
     teamIds.delete(teamId);
   }
 
+  @SubscribeMessage('view-task')
+  async handleViewTask(
+    @ConnectedSocket() socket: AppSocket,
+    @MessageBody() payload: ViewTaskPayload,
+  ): Promise<void> {
+    const user = socket.data.user;
+    const { taskId, boardId } = payload ?? {};
+    if (!user || !taskId || !boardId) return;
+
+    // Idempotent, same reason as join-board/join-team.
+    if (socket.data.viewingTaskId === taskId) return;
+
+    const allowed = await this.isTeamMember(user.id, boardId);
+    if (!allowed) return; // silent refusal no error event in the contract
+
+    // A socket only ever actively views one task at a time — leave whichever
+    // one it was in before switching to a new task.
+    const previousTaskId = socket.data.viewingTaskId;
+    if (previousTaskId) {
+      socket.leave(this.taskRoom(previousTaskId));
+      this.broadcastTaskViewers(previousTaskId);
+    }
+
+    await socket.join(this.taskRoom(taskId));
+    socket.data.viewingTaskId = taskId;
+    this.broadcastTaskViewers(taskId);
+  }
+
+  @SubscribeMessage('leave-task')
+  handleLeaveTask(
+    @ConnectedSocket() socket: AppSocket,
+    @MessageBody() payload: LeaveTaskPayload,
+  ): void {
+    const taskId = payload?.taskId;
+    if (!taskId || socket.data.viewingTaskId !== taskId) return;
+
+    socket.leave(this.taskRoom(taskId));
+    socket.data.viewingTaskId = undefined;
+    this.broadcastTaskViewers(taskId);
+  }
+
   handleDisconnect(socket: AppSocket): void {
-    const boardIds = socket.data.boardIds;
-    if (!boardIds) return;
     // Socket.io removes a closing socket from all its rooms (leaveAll())
-    // before firing 'disconnect', so getPresenceUsers already excludes it —
-    // we just need to know which boards to re-broadcast for.
-    for (const boardId of boardIds) {
-      this.broadcastPresence(boardId);
+    // before firing 'disconnect', so getPresenceUsers/getTaskViewers already
+    // exclude it — we just need to know which rooms to re-broadcast for.
+    const boardIds = socket.data.boardIds;
+    if (boardIds) {
+      for (const boardId of boardIds) {
+        this.broadcastPresence(boardId);
+      }
+    }
+
+    const viewingTaskId = socket.data.viewingTaskId;
+    if (viewingTaskId) {
+      this.broadcastTaskViewers(viewingTaskId);
     }
   }
 
@@ -170,12 +220,20 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
       .emit('member:joined', { teamId, member });
   }
 
+  broadcastTaskActivity(boardId: string, payload: TaskActivityPayload): void {
+    this.server.to(this.room(boardId)).emit('task:activity', payload);
+  }
+
   private room(boardId: string): string {
     return `board:${boardId}`;
   }
 
   private teamRoom(teamId: string): string {
     return `team:${teamId}`;
+  }
+
+  private taskRoom(taskId: string): string {
+    return `task:${taskId}`;
   }
 
   private async isMemberOfTeam(
@@ -223,6 +281,28 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.server.to(this.room(boardId)).emit('presence:update', {
       boardId,
       users: this.getPresenceUsers(boardId),
+    });
+  }
+
+  private getTaskViewers(taskId: string): PresenceUser[] {
+    const socketIds =
+      this.server.sockets.adapter.rooms.get(this.taskRoom(taskId)) ??
+      new Set<string>();
+    const byUserId = new Map<string, PresenceUser>();
+    for (const socketId of socketIds) {
+      const viewerSocket = this.server.sockets.sockets.get(socketId) as
+        | AppSocket
+        | undefined;
+      const user = viewerSocket?.data?.user;
+      if (user) byUserId.set(user.id, user);
+    }
+    return [...byUserId.values()];
+  }
+
+  private broadcastTaskViewers(taskId: string): void {
+    this.server.to(this.taskRoom(taskId)).emit('task-viewers:update', {
+      taskId,
+      users: this.getTaskViewers(taskId),
     });
   }
 }
