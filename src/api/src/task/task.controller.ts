@@ -60,16 +60,23 @@ export class TaskController {
   @ResourceContext('task')
   @TeamRoles(MemberRole.EDITOR, MemberRole.ADMIN)
   @Patch('tasks/:id')
-  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
-    return this.taskService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskDto,
+    @CurrentUser() currentUser: { userId: string },
+  ) {
+    return this.taskService.update(id, dto, currentUser.userId);
   }
 
   // ADMIN only can delete a task
   @ResourceContext('task')
   @TeamRoles(MemberRole.ADMIN)
   @Delete('tasks/:id')
-  remove(@Param('id') id: string) {
-    return this.taskService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: { userId: string },
+  ) {
+    return this.taskService.remove(id, currentUser.userId);
   }
 
   // EDITOR+ can manage subtasks

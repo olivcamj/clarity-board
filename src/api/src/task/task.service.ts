@@ -67,6 +67,13 @@ export class TaskService {
 
     const result = TaskResponseDto.fromPrisma(task);
     this.realtimeGateway.broadcastTaskCreated(result.boardId, result);
+    await this.broadcastActivity(
+      'created',
+      result.boardId,
+      result.id,
+      result.title,
+      userId,
+    );
     return result;
   }
 
@@ -79,7 +86,11 @@ export class TaskService {
     return TaskResponseDto.fromPrisma(task);
   }
 
-  async update(id: string, dto: UpdateTaskDto): Promise<TaskResponseDto> {
+  async update(
+    id: string,
+    dto: UpdateTaskDto,
+    userId: string,
+  ): Promise<TaskResponseDto> {
     await this.requireTask(id);
 
     const task = await this.prisma.task.update({
@@ -106,19 +117,59 @@ export class TaskService {
 
     const result = TaskResponseDto.fromPrisma(task);
     this.realtimeGateway.broadcastTaskUpdated(result.boardId, result);
+    await this.broadcastActivity(
+      'updated',
+      result.boardId,
+      result.id,
+      result.title,
+      userId,
+    );
     return result;
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string, userId: string): Promise<{ message: string }> {
     const task = await this.prisma.task.findUnique({
       where: { id },
-      select: { boardId: true },
+      select: { boardId: true, title: true },
     });
     if (!task) throw new NotFoundException(`Task ${id} not found`);
 
     await this.prisma.task.delete({ where: { id } });
     this.realtimeGateway.broadcastTaskDeleted(task.boardId, { id });
+    await this.broadcastActivity(
+      'deleted',
+      task.boardId,
+      id,
+      task.title,
+      userId,
+    );
     return { message: 'Task deleted successfully' };
+  }
+
+  // Looks up the actor's display info and fans out a lightweight task:activity
+  // event alongside the main task:created/updated/deleted broadcast — kept
+  // separate from those payloads so existing consumers (useTasks' upsert
+  // logic) don't need to change shape; this is purely for toast copy.
+  private async broadcastActivity(
+    type: 'created' | 'updated' | 'deleted',
+    boardId: string,
+    taskId: string,
+    taskTitle: string,
+    userId: string,
+  ): Promise<void> {
+    const actor = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true },
+    });
+    if (!actor) return;
+
+    this.realtimeGateway.broadcastTaskActivity(boardId, {
+      type,
+      taskId,
+      taskTitle,
+      boardId,
+      actor: { id: actor.id, name: actor.name ?? '' },
+    });
   }
 
   async addSubtask(
@@ -260,7 +311,9 @@ export class TaskService {
     if (!task) throw new NotFoundException(`Task ${id} not found`);
   }
 
-  private async findOneAndBroadcastUpdate(taskId: string): Promise<TaskResponseDto> {
+  private async findOneAndBroadcastUpdate(
+    taskId: string,
+  ): Promise<TaskResponseDto> {
     const dto = await this.findOne(taskId);
     this.realtimeGateway.broadcastTaskUpdated(dto.boardId, dto);
     return dto;
