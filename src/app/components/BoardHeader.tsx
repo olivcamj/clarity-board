@@ -5,15 +5,19 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { TopBar } from './TopBar';
 
+export interface TeamPresenceMember {
+  name: string;
+  online: boolean;
+}
+
 interface BoardHeaderProps {
   sprintCode: string;
   sprintLabel: string;
   boardName: string;
   subtitle: string;
   progress: number;      // 0–100
-  teamNames: string[];
+  teamPresence: TeamPresenceMember[];
   hasTeammates?: boolean;
-  onlineNames?: string[];
   onNewTask: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -25,9 +29,8 @@ export function BoardHeader({
   boardName,
   subtitle,
   progress,
-  teamNames,
+  teamPresence,
   hasTeammates = false,
-  onlineNames = [],
   onNewTask,
   searchQuery,
   onSearchChange,
@@ -84,15 +87,18 @@ export function BoardHeader({
             </>
           )}
 
-          {/* Online now */}
-          {onlineNames.length > 0 && (
-            <AvatarStack names={onlineNames} size={28} max={4} label="Online now" />
-          )}
-
-          {/* Team avatars — offline teammates only; online ones are already
-              shown in the "Online now" stack above. */}
-          {teamNames.length > 0 && (
-            <AvatarStack names={teamNames} size={28} max={4} label="Offline" />
+          {/* Team roster — online members show a presence dot (sorted first
+              by the caller so they aren't pushed out of the visible "max"
+              by offline teammates), rather than duplicating avatars across
+              two separate stacks. */}
+          {teamPresence.length > 0 && (
+            <AvatarStack
+              names={teamPresence.map(member => member.name)}
+              online={teamPresence.map(member => member.online)}
+              size={28}
+              max={4}
+              label="Team"
+            />
           )}
 
           {/* New task */}

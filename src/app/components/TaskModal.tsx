@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Task, Priority, Status, LabelKey } from '@/types/task';
 import { LABELS, personName } from '@/data/labels';
 import { formatDate, timeAgo } from '@/lib/utils';
-import { Avatar } from '../ui/Avatar';
+import { Avatar, AvatarStack } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
@@ -39,6 +39,8 @@ export interface TaskModalProps {
   onEditComment?: (commentId: string, text: string) => void;
   onRemoveComment?: (commentId: string) => void;
   currentUserId?: string;
+  /** Other users currently viewing this task, for a live "Also viewing" indicator. */
+  viewers?: TeamMemberOption[];
 }
 
 const STATUS_CONFIG: Record<Status, { label: string; dot: string }> = {
@@ -170,7 +172,9 @@ export function TaskModal({
   onEditComment,
   onRemoveComment,
   currentUserId,
+  viewers = [],
 }: TaskModalProps) {
+  const otherViewers = viewers.filter(viewer => viewer.id !== currentUserId);
   const dialogRef = useRef<HTMLDivElement>(null);
   const [commentText, setCommentText] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -356,7 +360,7 @@ export function TaskModal({
 
             {/* Breadcrumb — view/edit only */}
             {!isCreating && task && statusConfig && (
-              <p
+              <div
                 aria-label={`Task #${task.id.slice(-5).toUpperCase()}, status: ${statusConfig.label}${task.sprint ? `, ${task.sprint}` : ''}`}
                 className="flex items-center gap-[8px] mb-[14px] flex-wrap"
               >
@@ -376,7 +380,21 @@ export function TaskModal({
                     <span className="font-ui text-[11px] text-ash">{task.sprint}</span>
                   </>
                 )}
-              </p>
+                {otherViewers.length > 0 && (
+                  <>
+                    <span aria-hidden="true" className="text-chalk">·</span>
+                    <span className="inline-flex items-center gap-[6px]">
+                      <span className="font-ui text-[11px] text-ash">Also viewing</span>
+                      <AvatarStack
+                        names={otherViewers.map(viewer => viewer.name)}
+                        size={18}
+                        max={3}
+                        label="Also viewing"
+                      />
+                    </span>
+                  </>
+                )}
+              </div>
             )}
 
             {/* Create mode label */}
