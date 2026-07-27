@@ -20,6 +20,12 @@ describe('AiService', () => {
     tasks: [{ title: 'Existing task' }],
   };
 
+  const mockTask = {
+    title: 'Ship v2 launch',
+    description: 'Get the mobile app ready for the v2 launch',
+    subtasks: [{ text: 'Existing subtask' }],
+  };
+
   const mockPrismaService = {
     user: {
       updateMany: jest.fn(),
@@ -27,6 +33,9 @@ describe('AiService', () => {
       findUnique: jest.fn(),
     },
     board: {
+      findUnique: jest.fn(),
+    },
+    task: {
       findUnique: jest.fn(),
     },
   };
@@ -39,6 +48,7 @@ describe('AiService', () => {
       aiGenerationCount: 1,
     });
     mockPrismaService.board.findUnique.mockResolvedValue(mockBoard);
+    mockPrismaService.task.findUnique.mockResolvedValue(mockTask);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -154,6 +164,78 @@ describe('AiService', () => {
       await expect(
         service.generateTaskSuggestions('board-1', 'plan something', 'user-1'),
       ).rejects.toThrow('Failed to generate task suggestions');
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { aiGenerationCount: { decrement: 1 } },
+      });
+    });
+  });
+
+  describe('breakdownTask', () => {
+    it('returns sanitized subtask suggestions on a valid Gemini response', async () => {
+      mockGenerateContent.mockResolvedValue({
+        text: JSON.stringify({
+          subtasks: [{ text: 'Audit existing screens' }, { text: 'Write release notes' }],
+        }),
+      });
+
+      const result = await service.breakdownTask('task-1', 'user-1');
+
+      expect(result.subtasks).toHaveLength(2);
+      expect(result.subtasks[0].text).toBe('Audit existing screens');
+      expect(result.usage).toEqual({ used: 1, limit: 3, remaining: 2 });
+      expect(mockPrismaService.user.updateMany).toHaveBeenCalledWith({
+        where: { id: 'user-1', aiGenerationCount: { lt: 3 } },
+        data: { aiGenerationCount: { increment: 1 } },
+      });
+    });
+
+    it('drops malformed/oversized items instead of failing the whole request', async () => {
+      mockGenerateContent.mockResolvedValue({
+        text: JSON.stringify({
+          subtasks: [
+            { text: 'Valid subtask' },
+            { text: '' },
+            { text: 'x'.repeat(121) },
+          ],
+        }),
+      });
+
+      const result = await service.breakdownTask('task-1', 'user-1');
+
+      expect(result.subtasks).toHaveLength(1);
+      expect(result.subtasks[0].text).toBe('Valid subtask');
+    });
+
+    it('throws 429 and never calls Gemini once the user has hit the limit', async () => {
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.breakdownTask('task-1', 'user-1'),
+      ).rejects.toThrow(HttpException);
+      expect(mockGenerateContent).not.toHaveBeenCalled();
+    });
+
+    it('refunds the call if the task is not found', async () => {
+      mockPrismaService.task.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.breakdownTask('missing-task', 'user-1'),
+      ).rejects.toThrow('Task missing-task not found');
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { aiGenerationCount: { decrement: 1 } },
+      });
+    });
+
+    it('refunds the call and throws BadGatewayException if Gemini errors', async () => {
+      mockGenerateContent.mockRejectedValue(new Error('network blip'));
+
+      await expect(
+        service.breakdownTask('task-1', 'user-1'),
+      ).rejects.toThrow('Failed to generate subtask suggestions');
 
       expect(mockPrismaService.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
