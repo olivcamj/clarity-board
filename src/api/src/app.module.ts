@@ -8,6 +8,7 @@ import { TeamModule } from './team/team.module';
 import { BoardModule } from './board/board.module';
 import { TaskModule } from './task/task.module';
 import { WorkspaceModule } from './workspace/workspace.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { WorkspaceModule } from './workspace/workspace.module';
     BoardModule,
     TaskModule,
     WorkspaceModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
