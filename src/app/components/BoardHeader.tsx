@@ -1,8 +1,10 @@
 'use client';
 
 import { AvatarStack } from '../ui/Avatar';
+import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
+import { Spark } from '../ui/Spark';
 import { TopBar } from './TopBar';
 
 export interface TeamPresenceMember {
@@ -19,6 +21,8 @@ interface BoardHeaderProps {
   teamPresence: TeamPresenceMember[];
   hasTeammates?: boolean;
   onNewTask: () => void;
+  /** Omit to hide the "Generate with AI" trigger (e.g. the unauthenticated public demo board). */
+  onGenerateWithAI?: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
 }
@@ -32,6 +36,7 @@ export function BoardHeader({
   teamPresence,
   hasTeammates = false,
   onNewTask,
+  onGenerateWithAI,
   searchQuery,
   onSearchChange,
 }: BoardHeaderProps) {
@@ -99,6 +104,17 @@ export function BoardHeader({
               max={4}
               label="Team"
             />
+          )}
+
+          {/* Generate with AI */}
+          {onGenerateWithAI && (
+            <>
+              <Button type="button" variant="outline" tone="ember" size="sm" onClick={onGenerateWithAI}>
+                <Spark size={10} color="var(--ember)" />
+                Generate with AI
+              </Button>
+              <Badge tone="ai" size="sm">PRO</Badge>
+            </>
           )}
 
           {/* New task */}
