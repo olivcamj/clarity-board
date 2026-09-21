@@ -17,6 +17,7 @@ import {
   adaptBackendTask,
   type BackendTask,
 } from '../lib/api/tasks';
+import { breakdownTask as apiBreakdownTask } from '../lib/api/ai';
 import type { Task, Status } from '@/types/task';
 import type { TaskDeletedPayload } from '../types/socket';
 
@@ -24,9 +25,9 @@ import type { TaskDeletedPayload } from '../types/socket';
 export type CreateTaskFields = Pick<
   Task,
   'title' | 'description' | 'priority' | 'labels' | 'due' | 'sprint' | 'subtasks'
-> & { status?: Status };
+> & { status?: Status; aiGenerated?: boolean; source?: string };
 
-// Fields the backend's UpdateTaskDto whitelists — anything else (id, createdAt,
+// Fields the backend's UpdateTaskDto whitelists anything else (id, createdAt,
 // createdBy, ai, subtasks, attachments, comments, conversation, ...) gets
 // rejected with a 400 if sent, since the API uses forbidNonWhitelisted.
 const UPDATABLE_TASK_FIELDS = [
@@ -173,6 +174,8 @@ export function useTasks(boardId: string | null) {
           labels:      rest.labels,
           due:         rest.due,
           sprint:      rest.sprint,
+          aiGenerated: rest.aiGenerated,
+          source:      rest.source,
         });
 
         let finalTask = adaptBackendTask(created);
@@ -347,6 +350,18 @@ export function useTasks(boardId: string | null) {
     [getToken, setOpError, applyOptimistic]
   );
 
+  //  AI breakdown — returns suggestions only; nothing is persisted until the
+  // caller (TaskModal's draft/save flow) commits them via addSubtask.
+
+  const breakdownTask = useCallback(
+    async (taskId: string) => {
+      const token = await getToken();
+      const result = await apiBreakdownTask(token, taskId);
+      return result.subtasks;
+    },
+    [getToken]
+  );
+
   //  Comments
 
   const addComment = useCallback(
@@ -405,6 +420,7 @@ export function useTasks(boardId: string | null) {
     updateTask,
     deleteTask,
     toggleSubtask,
+    breakdownTask,
     addComment,
     editComment,
     removeComment,
